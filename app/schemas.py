@@ -8,13 +8,13 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str | None = None
+    email: str | None = None
 
 
 class UserBase(SQLModel):
-    username: str
     email: str | None = None
     full_name: str | None = None
+    phone: str | None = None
 
 
 class UserPublic(UserBase):
