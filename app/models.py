@@ -1,4 +1,7 @@
 from sqlmodel import Field, SQLModel, Relationship
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional
 
 
 class RolePermissions(SQLModel, table=True):
@@ -20,7 +23,7 @@ class Role(SQLModel, table=True):
 class Permission(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str | None = Field(unique=True)
-    roles: list[Role] = Relationship(
+    roles: list["Role"] = Relationship(
         back_populates="permissions", link_model=RolePermissions
     )
 
@@ -33,5 +36,74 @@ class User(SQLModel, table=True):
     phone: str | None = Field(default=None)
     disabled: bool | None = Field(default=False)
     role_id: int | None = Field(foreign_key="role.id", default=None)
-    role: Role | None = Relationship(back_populates="users")
     hashed_password: str
+    role: Optional["Role"] = Relationship(back_populates="users")
+    cart: Optional["Cart"] = Relationship(back_populates="user")
+    movimientos: list["MovimientoInventario"] = Relationship(back_populates="usuario")
+
+
+class Cart(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    user_id: int | None = Field(default=None, foreign_key="user.id", unique=True)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+    updated_at: datetime | None = Field(default_factory=datetime.utcnow)
+    user: Optional["User"] = Relationship(back_populates="cart")
+    items: list["ItemCart"] = Relationship(back_populates="cart")
+
+
+class LoteInventory(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    codigo_lote: str | None = Field(default=None, unique=True, index=True)
+    proveedor: str | None = Field(default=None)
+    fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
+    costo_total: Decimal | None = Field(default=None)
+    estado: str | None = Field(default="activo")
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+    piezas: list["WoodPiece"] = Relationship(back_populates="lote")
+
+
+class WoodPiece(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+
+    # tipo_madera_id: int | None = Field(default=None, foreign_key="tipo_madera.id")
+    # medida_id: int | None = Field(default=None, foreign_key="medida.id")
+
+    lote_id: int | None = Field(default=None, foreign_key="loteinventory.id")
+    largo_mm: int | None = Field(default=None)
+    volumen_m3: Decimal | None = Field(default=None)
+    estado: str | None = Field(default="disponible")
+    costo_unitario: Decimal | None = Field(default=None)
+    precio_unitario: Decimal | None = Field(default=None)
+    fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    # tipo_madera: Optional["TipoMadera"] = Relationship(back_populates="piezas")
+    # medida: Optional["Medida"] = Relationship(back_populates="piezas")
+
+    lote: Optional["LoteInventory"] = Relationship(back_populates="piezas")
+    items_carrito: list["ItemCart"] = Relationship(back_populates="pieza")
+    movimientos: list["MovimientoInventario"] = Relationship(back_populates="pieza")
+    # detalles_cotizacion: list["DetalleCotizacion"] = Relationship(back_populates="pieza")
+
+
+class ItemCart(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    carrito_id: int | None = Field(default=None, foreign_key="cart.id")
+    wood_piece_id: int | None = Field(default=None, foreign_key="woodpiece.id")
+    cantidad: int | None = Field(default=1)
+    added_at: datetime | None = Field(default_factory=datetime.utcnow)
+    cart: Optional["Cart"] = Relationship(back_populates="items")
+    pieza: Optional["WoodPiece"] = Relationship(back_populates="items_carrito")
+
+
+class MovimientoInventario(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    pieza_id: int | None = Field(default=None, foreign_key="woodpiece.id")
+    usuario_id: int | None = Field(default=None, foreign_key="user.id")
+    tipo_movimiento: str | None = Field(default=None)
+    cantidad: int | None = Field(default=1)
+    referencia_id: int | None = Field(default=None)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    pieza: Optional["WoodPiece"] = Relationship(back_populates="movimientos")
+    usuario: Optional["User"] = Relationship(back_populates="movimientos")

@@ -34,6 +34,12 @@ class PermissionsEnum(str, Enum):
     UPDATE_USER = "update_user"
     CHANGE_PERMISSIONS = "change_permissions"
 
+    # Inventario
+    VER_INVENTARIO = "ver_inventario"
+    GESTIONAR_INVENTARIO = "gestionar_inventario"
+
+    
+
 
 class RoleEnum(str, Enum):
     ADMIN = "admin"

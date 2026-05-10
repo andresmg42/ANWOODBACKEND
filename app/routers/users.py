@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi import APIRouter
-from ..schemas import UserPublic, UserInDB, UserIn, UserPublic
+from ..schemas import UserPublic, UserInDB, UserIn, UserPublic, ChangeRole
 from ..auth import (
     get_current_active_user,
     get_password_hash,
@@ -92,11 +92,11 @@ async def delete_user(user_id: int, db: SessionDep):
 @router.patch(
     "/users/{user_id}/role",
     response_model=UserPublic,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 def change_user_role(
     user_id: int,
-    new_role: str,
+    new_role: ChangeRole,
     session: SessionDep,
 ):
     user = session.get(Userdb, user_id)
@@ -104,13 +104,13 @@ def change_user_role(
     if not user:
         raise HTTPException(404, "User not found")
 
-    role = session.exec(select(Role).where(Role.name == new_role)).first()
+    if not new_role.name:
+        raise HTTPException(400, "role name is required")
 
-    if not role:
-        HTTPException(404, "Role not Found")
+    try:
+        role_enum = RoleEnum(new_role.name)
 
-    user.role = role
-    session.commit()
-    session.refresh(user)
+    except ValueError:
+        raise HTTPException(400, "invalid role")
 
-    return user
+    return assign_role_to_user(user, role_enum, session)
