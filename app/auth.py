@@ -38,6 +38,7 @@ class PermissionsEnum(str, Enum):
 class RoleEnum(str, Enum):
     ADMIN = "admin"
     USER = "user"
+    STAFF = "staff"
 
 
 def verify_password(plain_password, hashed_password):
