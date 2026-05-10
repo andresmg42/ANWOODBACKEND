@@ -13,9 +13,9 @@ router = APIRouter(prefix="/cart", tags=["cart"])
 
 
 def _get_or_create_carrito(user: User, db) -> Cart:  
-    carrito = db.exec(select(Cart).where(Cart.usuario_id == user.id)).first()
+    carrito = db.exec(select(Cart).where(Cart.user_id == user.id)).first()  
     if not carrito:
-        carrito = Cart(usuario_id=user.id)
+        carrito = Cart(user_id=user.id) 
         db.add(carrito)
         db.commit()
         db.refresh(carrito)
