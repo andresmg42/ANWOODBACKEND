@@ -15,6 +15,7 @@ class UserBase(SQLModel):
     username: str
     email: str | None = None
     full_name: str | None = None
+    phone: str | None = None
 
 
 class UserPublic(UserBase):

@@ -30,6 +30,7 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True)
     email: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
+    phone: str | None = Field(default=None)
     disabled: bool | None = Field(default=False)
     role_id: int | None = Field(foreign_key="role.id", default=None)
     role: Role | None = Relationship(back_populates="users")
