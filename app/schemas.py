@@ -29,3 +29,7 @@ class UserIn(UserBase):
 class UserInDB(UserBase):
     hashed_password: str
     disabled: bool | None = None
+
+
+class ChangeRole(BaseModel):
+    name: str | None = None
