@@ -7,7 +7,8 @@ from sqlalchemy.orm import selectinload
 from ..auth import require_permission, PermissionsEnum, get_current_active_user
 from ..database import SessionDep
 from ..models import WoodPiece, LoteInventory, MovimientoInventario, User
-# from ..models import Medida, TipoMadera  
+from ..models import Medida, TipoMadera  
+from ..schemas import TipoMaderaPublic
 from ..schemas import LoteCreate, LotePublic, PiezaCreate, PiezaPublic, PiezaUpdate, MovimientoInventarioPublic
 
 router = APIRouter(tags=["inventory"])
@@ -44,10 +45,13 @@ async def get_lote(lote_id: int, db: SessionDep):
 
 # ─── Piezas ───────────────────────────────────────────────────────────────────
 
-# def _calcular_volumen(medida: Medida, largo_mm: int) -> Decimal:
-#     """Ancho x Alto x Largo en mm³ → m³"""
-#     vol_mm3 = medida.ancho_mm * medida.alto_mm * Decimal(largo_mm)
-#     return vol_mm3 / Decimal("1_000_000_000")
+def _calcular_volumen(medida: Medida, largo_mm: float) -> Decimal:
+    """Ancho x Alto x Largo en mm³ → m³"""
+    ancho = Decimal(medida.ancho_mm)
+    alto = Decimal(medida.alto_mm)
+    largo = Decimal(largo_mm)
+    vol_mm3 = ancho * alto * largo
+    return vol_mm3 / Decimal("1_000_000_000")
 
 
 @router.post("/piezas", response_model=PiezaPublic, status_code=201,
@@ -57,14 +61,14 @@ async def crear_pieza(
     db: SessionDep,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    # medida = db.get(Medida, data.medida_id)
-    # if not medida:
-    #     raise HTTPException(404, "Medida no encontrada")
-    # if not db.get(TipoMadera, data.tipo_madera_id):
-    #     raise HTTPException(404, "Tipo de madera no encontrado")
-    # volumen = _calcular_volumen(medida, data.largo_mm)
+    medida = db.get(Medida, data.medida_id)
+    if not medida:
+        raise HTTPException(404, "Medida no encontrada")
+    if not db.get(TipoMadera, data.tipo_madera_id):
+        raise HTTPException(404, "Tipo de madera no encontrado")
+    volumen = _calcular_volumen(medida, data.largo_mm)
 
-    pieza = WoodPiece(**data.model_dump(), volumen_m3=None)
+    pieza = WoodPiece(**data.model_dump(), volumen_m3=volumen)
     db.add(pieza)
     db.flush()
 
@@ -77,40 +81,39 @@ async def crear_pieza(
     db.add(movimiento)
     db.commit()
 
-    query = select(WoodPiece).where(WoodPiece.id == pieza.id)
+    query = select(WoodPiece).where(WoodPiece.id == pieza.id).options(
+        selectinload(WoodPiece.tipo_madera),
+        selectinload(WoodPiece.medida)
+    )
     return db.exec(query).unique().first()
 
 
-@router.get("/piezas", response_model=list[PiezaPublic],
-            dependencies=[Depends(require_permission(PermissionsEnum.VER_INVENTARIO))])
+@router.get("/piezas", response_model=list[PiezaPublic])
 async def listar_piezas(
     db: SessionDep,
     estado: str | None = None,
-    # tipo_madera_id: int | None = None,  
+    tipo_madera_id: int | None = None,  
     offset: int = 0,
     limit: Annotated[int, Query(le=200)] = 100,
 ):
-    q = select(WoodPiece)
-    # q = select(WoodPiece).options(
-    #     selectinload(WoodPiece.tipo_madera),
-    #     selectinload(WoodPiece.medida)
-    # )
+    q = select(WoodPiece).options(
+        selectinload(WoodPiece.tipo_madera),
+        selectinload(WoodPiece.medida)
+    )
     if estado:
         q = q.where(WoodPiece.estado == estado)
-    # if tipo_madera_id:
-    #     q = q.where(WoodPiece.tipo_madera_id == tipo_madera_id)
+    if tipo_madera_id:
+        q = q.where(WoodPiece.tipo_madera_id == tipo_madera_id)
 
     return db.exec(q.offset(offset).limit(limit)).unique().all()
 
 
-@router.get("/piezas/{pieza_id}", response_model=PiezaPublic,
-            dependencies=[Depends(require_permission(PermissionsEnum.VER_INVENTARIO))])
+@router.get("/piezas/{pieza_id}", response_model=PiezaPublic)
 async def get_pieza(pieza_id: int, db: SessionDep):
-    # query = select(WoodPiece).where(WoodPiece.id == pieza_id).options(
-    #     selectinload(WoodPiece.tipo_madera),
-    #     selectinload(WoodPiece.medida)
-    # )
-    query = select(WoodPiece).where(WoodPiece.id == pieza_id)
+    query = select(WoodPiece).where(WoodPiece.id == pieza_id).options(
+        selectinload(WoodPiece.tipo_madera),
+        selectinload(WoodPiece.medida)
+    )
     p = db.exec(query).unique().first()
 
     if not p:
@@ -128,7 +131,10 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
     p.sqlmodel_update(data.model_dump(exclude_unset=True))
     db.commit()
 
-    query = select(WoodPiece).where(WoodPiece.id == pieza_id)
+    query = select(WoodPiece).where(WoodPiece.id == pieza_id).options(
+        selectinload(WoodPiece.tipo_madera),
+        selectinload(WoodPiece.medida)
+    )
     return db.exec(query).unique().first()
 
 
@@ -161,3 +167,27 @@ async def listar_movimientos(
         result.append(mov_dict)
 
     return result
+
+# ─── Tipos de Madera ─────────────────────────────────────────────────────────
+
+@router.get("/wood-types", response_model=list[TipoMaderaPublic])
+async def listar_tipos_madera(db: SessionDep):
+    return db.exec(select(TipoMadera)).all()
+
+@router.post("/wood-types", 
+             response_model=TipoMadera,
+             dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))])
+async def crear_tipo_madera(data: TipoMadera, db: SessionDep):
+    db.add(data)
+    db.commit()
+    db.refresh(data)
+    return data
+
+@router.post("/medidas", 
+             response_model=Medida,
+             dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))])
+async def crear_medida(data: Medida, db: SessionDep):
+    db.add(data)
+    db.commit()
+    db.refresh(data)
+    return data
