@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from sqlmodel import SQLModel
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 
 class Token(BaseModel):
@@ -89,11 +90,22 @@ class PiezaCreate(SQLModel):
     largo_mm: int
     costo_unitario: Decimal | None = None
     precio_unitario: Decimal | None = None
+    stock: int = 0
 
 
 class TipoMaderaRelacion(SQLModel):
     id: int
     nombre: str
+
+class TipoMaderaPublic(SQLModel):
+    id: int
+    nombre: str
+    categoria: str
+
+class MedidaPublic(SQLModel):
+    id: int
+    ancho_mm: float
+    alto_mm: float
 
 
 class MedidaRelacion(SQLModel):
@@ -106,12 +118,12 @@ class MedidaRelacion(SQLModel):
 class PiezaPublic(PiezaCreate):
     id: int
     volumen_m3: Decimal
+    stock: int
     estado: str
     fecha_ingreso: datetime
     created_at: datetime
-    tipo_madera: TipoMaderaRelacion | None = None
-    medida: MedidaRelacion | None = None
-
+    tipo_madera: Optional[TipoMaderaPublic] = None
+    medida: Optional[MedidaPublic] = None 
 
 class PiezaUpdate(SQLModel):
     estado: str | None = None

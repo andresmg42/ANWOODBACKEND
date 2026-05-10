@@ -24,7 +24,11 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(cart.router) 
-app.include_router(Inventory.router)
+#app.include_router(Inventory.router)
+app.include_router(
+    Inventory.router, 
+    prefix="/api/v1/inventory" #/api/v1/inventory/piezas
+)
 
 # Health check
 @app.get("/health")
