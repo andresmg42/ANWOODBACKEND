@@ -55,15 +55,15 @@ def get_password_hash(password):
     return password_hash.hash(password)
 
 
-def get_user(db: SessionDep, email: str):
-    user_in_db = db.exec(select(Userdb).where(Userdb.email == email))
+def get_user(db: SessionDep, username: str):
+    user_in_db = db.exec(select(Userdb).where(Userdb.username == username))
     if not user_in_db:
         raise HTTPException(status_code=404, detail="Hero not found")
     return user_in_db.first()
 
 
-def authenticate_user(db: SessionDep, email: str, password: str):
-    user = get_user(db, email)
+def authenticate_user(db: SessionDep, username: str, password: str):
+    user = get_user(db, username)
     if not user:
         verify_password(password, DUMMY_HASH)
         return False
@@ -93,13 +93,13 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-        if email is None:
+        username = payload.get("sub")
+        if username is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
+        token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
-    user = get_user(db, email=token_data.email)
+    user = get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user

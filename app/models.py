@@ -30,6 +30,7 @@ class Permission(SQLModel, table=True):
 
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
+    username: str = Field(index=True, unique=True)
     email: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     phone: str | None = Field(default=None)
@@ -82,7 +83,7 @@ class WoodPiece(SQLModel, table=True):
     lote: Optional["LoteInventory"] = Relationship(back_populates="piezas")
     items_carrito: list["ItemCart"] = Relationship(back_populates="pieza")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="pieza")
-    #detalles_cotizacion: list["DetalleCotizacion"] = Relationship(back_populates="pieza")
+    # detalles_cotizacion: list["DetalleCotizacion"] = Relationship(back_populates="pieza")
 
 
 class ItemCart(SQLModel, table=True):

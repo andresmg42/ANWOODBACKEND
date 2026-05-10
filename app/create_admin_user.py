@@ -10,16 +10,17 @@ load_dotenv()
 
 
 PASSWORD = os.getenv("PASSWORD")
+USERNAME = os.getenv("SUPERUSER_USERNAME")
 EMAIL = os.getenv("EMAIL")
 
 
 def create_super_user(db: Session):
 
-    if not PASSWORD or not EMAIL:
+    if not PASSWORD or not USERNAME:
         print("USER DATA IS WRONG")
         return
 
-    existing = db.exec(select(User).where(User.email == EMAIL)).first()
+    existing = db.exec(select(User).where(User.username == USERNAME)).first()
 
     if existing:
         print("user already exists")
@@ -27,6 +28,7 @@ def create_super_user(db: Session):
     hashed_password = get_password_hash(PASSWORD)
 
     user = User(
+        username=USERNAME,
         email=EMAIL,
         hashed_password=hashed_password,
     )
