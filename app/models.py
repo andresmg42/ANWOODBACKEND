@@ -30,7 +30,7 @@ class Permission(SQLModel, table=True):
 
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
-    username: str = Field(index=True, unique=True)
+    username: str = Field(default=None, index=True, unique=True)
     email: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     phone: str | None = Field(default=None)
@@ -61,24 +61,38 @@ class LoteInventory(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
 
+class TipoMadera(SQLModel, table=True):
+    __tablename__ = "tipo_madera"
+    id: int | None = Field(primary_key=True, default=None)
+    nombre: str = Field(index=True)
+    categoria: str = Field(description="larga, corta o pedido")
+    piezas: list["WoodPiece"] = Relationship(back_populates="tipo_madera")
+
+class Medida(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    ancho_mm: float
+    alto_mm: float
+    etiqueta: str | None = None
+    piezas: list["WoodPiece"] = Relationship(back_populates="medida")
 
 class WoodPiece(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
 
-    # tipo_madera_id: int | None = Field(default=None, foreign_key="tipo_madera.id")
-    # medida_id: int | None = Field(default=None, foreign_key="medida.id")
+    tipo_madera_id: int | None = Field(default=None, foreign_key="tipo_madera.id")
+    medida_id: int | None = Field(default=None, foreign_key="medida.id")
 
     lote_id: int | None = Field(default=None, foreign_key="loteinventory.id")
     largo_mm: int | None = Field(default=None)
     volumen_m3: Decimal | None = Field(default=None)
+    stock: int = Field(default=0)
     estado: str | None = Field(default="disponible")
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
     fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
-    # tipo_madera: Optional["TipoMadera"] = Relationship(back_populates="piezas")
-    # medida: Optional["Medida"] = Relationship(back_populates="piezas")
+    tipo_madera: Optional["TipoMadera"] = Relationship(back_populates="piezas")
+    medida: Optional["Medida"] = Relationship(back_populates="piezas")
 
     lote: Optional["LoteInventory"] = Relationship(back_populates="piezas")
     items_carrito: list["ItemCart"] = Relationship(back_populates="pieza")
