@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables, SessionDep
 from contextlib import asynccontextmanager
-from .routers import auth, users
+from .routers import auth, users, Inventory, cart
 
 
 @asynccontextmanager
@@ -23,8 +23,10 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(cart.router) 
+app.include_router(Inventory.router)
 
-
+# Health check
 @app.get("/health")
 def health_check(session: SessionDep):
     return {"ok": True}
