@@ -27,11 +27,23 @@ class UserPublic(UserBase):
 
 class UserIn(UserBase):
     password: str
+    role_id: int | None = 3
+
+
+class UserUpdate(SQLModel):
+    username: str | None = None
+    email: str | None = None
+    full_name: str | None = None
+    phone: str | None = None
+    password: str | None = None
+    role_id: int | None = None
+    disabled: bool | None = False
 
 
 class UserInDB(UserBase):
     hashed_password: str
     disabled: bool | None = None
+    role_id: int | None = 3
 
 
 class ChangeRole(BaseModel):
@@ -97,10 +109,12 @@ class TipoMaderaRelacion(SQLModel):
     id: int
     nombre: str
 
+
 class TipoMaderaPublic(SQLModel):
     id: int
     nombre: str
     categoria: str
+
 
 class MedidaPublic(SQLModel):
     id: int
@@ -123,7 +137,8 @@ class PiezaPublic(PiezaCreate):
     fecha_ingreso: datetime
     created_at: datetime
     tipo_madera: Optional[TipoMaderaPublic] = None
-    medida: Optional[MedidaPublic] = None 
+    medida: Optional[MedidaPublic] = None
+
 
 class PiezaUpdate(SQLModel):
     estado: str | None = None
