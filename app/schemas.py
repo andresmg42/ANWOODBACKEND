@@ -137,7 +137,6 @@ class PiezaCreate(SQLModel):
     costo_unitario: Decimal | None = None
     precio_unitario: Decimal | None = None
     cantidad: int = 0
-    cantidad_reservada: int = 0
 
 
 class TipoMaderaRelacion(SQLModel):
