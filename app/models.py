@@ -40,6 +40,7 @@ class User(SQLModel, table=True):
     role: Optional["Role"] = Relationship(back_populates="users")
     cart: Optional["Cart"] = Relationship(back_populates="user")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="usuario")
+    clientes: list["Client"] = Relationship(back_populates="user")
 
 
 class Cart(SQLModel, table=True):
@@ -61,6 +62,24 @@ class LoteInventory(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
 
+<<<<<<< HEAD
+
+class Client(SQLModel, table=True):
+    __tablename__ = "cliente"
+    id: int | None = Field(primary_key=True, default=None)
+    usuario_id: int | None = Field(default=None, foreign_key="user.id")
+    tipo_cliente: str
+    nombre_razon_social: str
+    identificacion_fiscal: str
+    email: str | None = Field(default=None)
+    telefono: str | None = Field(default=None)
+    direccion: str | None = Field(default=None)
+    activo: bool | None = Field(default=True)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    user: Optional["User"] = Relationship(back_populates="clientes")
+
+=======
 class Categoria(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     nombre: str = Field(index=True)
@@ -70,6 +89,7 @@ class Categoria(SQLModel, table=True):
     max_precio_m3: Decimal
     
     tipos_madera: list["TipoMadera"] = Relationship(back_populates="categoria")
+>>>>>>> develop
 
 class TipoMadera(SQLModel, table=True):
     __tablename__ = "tipo_madera"
@@ -86,12 +106,14 @@ class TipoMadera(SQLModel, table=True):
     piezas: list["WoodPiece"] = Relationship(back_populates="tipo_madera")
     
 
+
 class Medida(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     ancho_mm: float
     alto_mm: float
     etiqueta: str | None = None
     piezas: list["WoodPiece"] = Relationship(back_populates="medida")
+
 
 class WoodPiece(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
