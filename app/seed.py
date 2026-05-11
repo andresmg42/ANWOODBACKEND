@@ -16,6 +16,8 @@ def seed_data(db: Session):
             PermissionsEnum.CREATE_USER,
             PermissionsEnum.VIEW_USER,
             PermissionsEnum.UPDATE_USER,
+            PermissionsEnum.VER_INVENTARIO,
+            PermissionsEnum.GESTIONAR_INVENTARIO,
         ],
     )
     assign_permissions_to_role(
