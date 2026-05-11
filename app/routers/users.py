@@ -37,7 +37,7 @@ async def create_user(user: UserIn, db: SessionDep):
 
 @router.get(
     "/users",
-    response_model=list[UserPublic],
+    response_model=list[Userdb],
     dependencies=[Depends(require_permission(PermissionsEnum.VIEW_USER))],
 )
 async def get_users(db: SessionDep):
@@ -47,25 +47,19 @@ async def get_users(db: SessionDep):
     return users
 
 
-@router.patch(
-    "/users/{user_id}/delete",
-    dependencies=[Depends(require_permission(PermissionsEnum.DELETE_USER))],
+@router.get(
+    "/users/{user_id}",
+    response_model=UserPublic,
+    dependencies=[Depends(require_permission(PermissionsEnum.VIEW_USER))],
 )
-async def delete_user(user_id: int, db: SessionDep):
+async def get_user(db: SessionDep, user_id: int):
 
     user = db.get(Userdb, user_id)
 
     if not user:
         raise HTTPException(404, "user not found")
 
-    if user.disabled:
-        return {"message": f"user whit id {user_id} already deleted"}
-
-    user.disabled = True
-
-    db.commit()
-    db.refresh(user)
-    return {"message": f"user with id {user_id} deleted successfully"}
+    return user
 
 
 @router.patch(
