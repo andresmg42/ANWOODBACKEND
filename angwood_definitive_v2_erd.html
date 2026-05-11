@@ -73,6 +73,15 @@ const diagram = `erDiagram
     timestamp created_at
   }
 
+  CONFIGURACION {
+    int id PK
+    string clave
+    string valor
+    string descripcion
+    timestamp updated_at
+    uuid updated_by_id FK
+  }
+
   CATEGORIA {
     int id PK
     string nombre
@@ -146,6 +155,7 @@ const diagram = `erDiagram
     decimal costo_cargue
     decimal costo_descargue
     decimal costo_salvoconducto
+    boolean salvoconducto_es_manual
     decimal porcentaje_anticipo
     decimal valor_anticipo
     decimal total_monto
@@ -229,6 +239,7 @@ const diagram = `erDiagram
   USUARIO ||--o{ MOVIMIENTO_INVENTARIO : "registers"
   USUARIO ||--o{ REGISTRO_AUDITORIA : "generates"
   USUARIO ||--o{ HISTORIAL_ESTADO : "logs"
+  USUARIO ||--o{ CONFIGURACION : "last updated by"
   CATEGORIA ||--o{ TIPO_MADERA : "classifies"
   TIPO_MADERA ||--o{ MEDIDA : "has"
   TIPO_MADERA ||--o{ PIEZA_MADERA : "typed as"
