@@ -62,7 +62,6 @@ class LoteInventory(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
 
-<<<<<<< HEAD
 
 class Client(SQLModel, table=True):
     __tablename__ = "cliente"
@@ -79,7 +78,7 @@ class Client(SQLModel, table=True):
 
     user: Optional["User"] = Relationship(back_populates="clientes")
 
-=======
+
 class Categoria(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     nombre: str = Field(index=True)
@@ -87,9 +86,9 @@ class Categoria(SQLModel, table=True):
     permite_cubicacion: bool = Field(default=True)
     min_precio_m3: Decimal
     max_precio_m3: Decimal
-    
+
     tipos_madera: list["TipoMadera"] = Relationship(back_populates="categoria")
->>>>>>> develop
+
 
 class TipoMadera(SQLModel, table=True):
     __tablename__ = "tipo_madera"
@@ -104,7 +103,6 @@ class TipoMadera(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     categoria: Optional[Categoria] = Relationship(back_populates="tipos_madera")
     piezas: list["WoodPiece"] = Relationship(back_populates="tipo_madera")
-    
 
 
 class Medida(SQLModel, table=True):
