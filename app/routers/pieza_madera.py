@@ -62,7 +62,11 @@ async def crear_pieza(
         .where(WoodPiece.id == pieza.id)
         .options(selectinload(WoodPiece.tipo_madera), selectinload(WoodPiece.medida))
     )
-    return db.exec(query).unique().first()
+
+    res = db.exec(query).unique().first()
+    res.stock = res.cantidad - res.cantidad_reservada
+
+    return res
 
 
 @router.get("/piezas", response_model=list[PiezaPublic])
@@ -81,7 +85,12 @@ async def listar_piezas(
     if tipo_madera_id:
         q = q.where(WoodPiece.tipo_madera_id == tipo_madera_id)
 
-    return db.exec(q.offset(offset).limit(limit)).unique().all()
+    piezas = db.exec(q.offset(offset).limit(limit)).unique().all()
+
+    for p in piezas:
+        p.stock = p.cantidad - p.cantidad_reservada
+
+    return piezas
 
 
 @router.get("/piezas/{pieza_id}", response_model=PiezaPublic)
@@ -95,6 +104,8 @@ async def get_pieza(pieza_id: int, db: SessionDep):
 
     if not p:
         raise HTTPException(404, "Pieza no encontrada")
+    
+    p.stock = p.cantidad - p.cantidad_reservada
 
     return p
 
@@ -116,7 +127,11 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
         .where(WoodPiece.id == pieza_id)
         .options(selectinload(WoodPiece.tipo_madera), selectinload(WoodPiece.medida))
     )
-    return db.exec(query).unique().first()
+
+    res = db.exec(query).unique().first()
+    res.stock = res.cantidad - res.cantidad_reservada
+
+    return res
 
 
 @router.delete(

@@ -102,18 +102,26 @@ class PiezaCreate(SQLModel):
     largo_mm: int
     costo_unitario: Decimal | None = None
     precio_unitario: Decimal | None = None
-    stock: int = 0
+    cantidad: int = 0
+    cantidad_reservada: int = 0
 
 
 class TipoMaderaRelacion(SQLModel):
     id: int
     nombre: str
 
+class CategoriaPublic(SQLModel):
+    id: int
+    nombre: str
+    estrategia_precio: str
+    permite_cubicacion: bool
 
 class TipoMaderaPublic(SQLModel):
     id: int
     nombre: str
-    categoria: str
+    densidad_kg_m3: Decimal
+    precio_por_metro: Decimal
+    categoria: Optional[CategoriaPublic] = None
 
 
 class MedidaPublic(SQLModel):
@@ -128,14 +136,16 @@ class MedidaRelacion(SQLModel):
     alto_mm: Decimal
     etiqueta: str | None = None
 
-
-class PiezaPublic(PiezaCreate):
+class PiezaPublic(SQLModel):
     id: int
     volumen_m3: Decimal
-    stock: int
+    cantidad: int
+    cantidad_reservada: int
+    stock: int 
     estado: str
+    precio_unitario: Decimal | None = None
+    costo_unitario: Decimal | None = None
     fecha_ingreso: datetime
-    created_at: datetime
     tipo_madera: Optional[TipoMaderaPublic] = None
     medida: Optional[MedidaPublic] = None
 
