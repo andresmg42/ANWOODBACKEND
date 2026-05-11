@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables, SessionDep
 from contextlib import asynccontextmanager
-from .routers import auth, users, lote_inventory, cart, pieza_madera
+from .routers import auth, users, lote_inventory, cart, pieza_madera, tipos_madera, medidas, categorias
 
 
 @asynccontextmanager
@@ -26,6 +26,10 @@ app.include_router(auth.router)
 app.include_router(cart.router)
 app.include_router(lote_inventory.router)
 app.include_router(pieza_madera.router)
+app.include_router(tipos_madera.router)
+app.include_router(medidas.router)
+app.include_router(categorias.router)
+
 
 
 # Health check
