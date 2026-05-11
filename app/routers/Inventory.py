@@ -118,6 +118,8 @@ async def get_pieza(pieza_id: int, db: SessionDep):
 
     if not p:
         raise HTTPException(404, "Pieza no encontrada")
+    
+    print(f"Pieza {pieza_id}: tipo_madera={p.tipo_madera}, medida={p.medida}")
 
     return p
 

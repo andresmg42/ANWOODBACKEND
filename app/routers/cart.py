@@ -48,33 +48,48 @@ async def agregar_item(
     current_user: Annotated[User, Depends(get_current_active_user)],  
     db: SessionDep,
 ):
-    # Validar que la pieza existe y está disponible
-    pieza = db.get(WoodPiece, data.pieza_id)  
+    pieza = db.get(WoodPiece, data.wood_piece_id)
     if not pieza:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pieza no encontrada")
     
-    if not hasattr(pieza, 'estado') or pieza.estado != "disponible":
-        pass
-
+    if pieza.estado != "disponible":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"La pieza {data.wood_piece_id} no está disponible"
+        )
+    
     # Validar cantidad positiva
     if data.cantidad <= 0:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La cantidad debe ser mayor a 0")
-
+    
+    # Validar stock
+    if pieza.stock < data.cantidad:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Stock insuficiente. Solo hay {pieza.stock} unidades disponibles"
+        )
+    
     carrito = _get_or_create_carrito(current_user, db)
 
     existing = db.exec(
         select(ItemCart)
         .where(ItemCart.carrito_id == carrito.id)
-        .where(ItemCart.wood_piece_id == data.pieza_id)
+        .where(ItemCart.wood_piece_id == data.wood_piece_id)  
     ).first()
 
     if existing:
-        existing.cantidad += data.cantidad
+        nueva_cantidad = existing.cantidad + data.cantidad
+        # Validar stock total
+        if pieza.stock < nueva_cantidad:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No hay suficiente stock. Máximo disponible: {pieza.stock}"
+            )
+        existing.cantidad = nueva_cantidad
     else:
         item = ItemCart(
             carrito_id=carrito.id,
-            wood_piece_id=data.pieza_id,  
-            cantidad=data.cantidad
+            wood_piece_id=data.wood_piece_id, 
         )
         db.add(item)
 
