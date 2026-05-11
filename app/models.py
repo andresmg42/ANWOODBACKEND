@@ -104,7 +104,6 @@ class WoodPiece(SQLModel, table=True):
     volumen_m3: Decimal | None = Field(default=None)
     cantidad: int = Field(default=0)
     cantidad_reservada: int = Field(default=0)
-    stock: int | None = Field(default=None, exclude=True)
     estado: str | None = Field(default="disponible")
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
@@ -118,6 +117,9 @@ class WoodPiece(SQLModel, table=True):
     items_carrito: list["ItemCart"] = Relationship(back_populates="pieza")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="pieza")
     # detalles_cotizacion: list["DetalleCotizacion"] = Relationship(back_populates="pieza")
+    @property
+    def stock(self) -> int:
+        return self.cantidad - self.cantidad_reservada
 
 
 class ItemCart(SQLModel, table=True):

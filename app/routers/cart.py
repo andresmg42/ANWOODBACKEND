@@ -23,7 +23,6 @@ def _get_or_create_carrito(user: User, db) -> Cart:
 
 
 def _get_carrito_item(item_id: int, carrito_id: int, db) -> ItemCart:  
-    """Helper para obtener un item del carrito con validación"""
     item = db.get(ItemCart, item_id)
     if not item or item.carrito_id != carrito_id:
         raise HTTPException(
@@ -45,53 +44,45 @@ async def ver_carrito(
 @router.post("/items", response_model=CartPublic, status_code=status.HTTP_201_CREATED)
 async def agregar_item(
     data: ItemCartAdd,
-    current_user: Annotated[User, Depends(get_current_active_user)],  
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: SessionDep,
 ):
     pieza = db.get(WoodPiece, data.wood_piece_id)
     if not pieza:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pieza no encontrada")
-    
+
     if pieza.estado != "disponible":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"La pieza {data.wood_piece_id} no está disponible"
-        )
-    
-    # Validar cantidad positiva
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"La pieza {data.wood_piece_id} no está disponible")
+
     if data.cantidad <= 0:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La cantidad debe ser mayor a 0")
-    
-    # Validar stock
-    if pieza.stock < data.cantidad:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Stock insuficiente. Solo hay {pieza.stock} unidades disponibles"
-        )
-    
+
     carrito = _get_or_create_carrito(current_user, db)
 
     existing = db.exec(
         select(ItemCart)
         .where(ItemCart.carrito_id == carrito.id)
-        .where(ItemCart.wood_piece_id == data.wood_piece_id)  
+        .where(ItemCart.wood_piece_id == data.wood_piece_id)
     ).first()
 
     if existing:
         nueva_cantidad = existing.cantidad + data.cantidad
-        # Validar stock total
-        if pieza.stock < nueva_cantidad:
+        if pieza.stock < data.cantidad: 
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No hay suficiente stock. Máximo disponible: {pieza.stock}"
+                status.HTTP_400_BAD_REQUEST,
+                f"Stock insuficiente. Solo hay {pieza.stock} unidades disponibles"
             )
         existing.cantidad = nueva_cantidad
     else:
-        item = ItemCart(
-            carrito_id=carrito.id,
-            wood_piece_id=data.wood_piece_id, 
-        )
+        if pieza.stock < data.cantidad:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Stock insuficiente. Solo hay {pieza.stock} unidades disponibles"
+            )
+        item = ItemCart(carrito_id=carrito.id, wood_piece_id=data.wood_piece_id, cantidad=data.cantidad)
         db.add(item)
+
+    pieza.cantidad_reservada += data.cantidad
 
     carrito.updated_at = datetime.utcnow()
     db.commit()
@@ -101,34 +92,41 @@ async def agregar_item(
 
 @router.patch("/items/{item_id}", response_model=CartPublic)
 async def actualizar_item(
-    item_id: int, 
+    item_id: int,
     data: ItemCartUpdate,
-    current_user: Annotated[User, Depends(get_current_active_user)], 
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: SessionDep,
 ):
     carrito = _get_or_create_carrito(current_user, db)
-    
-    # Validar que la cantidad no sea negativa
+
     if data.cantidad < 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La cantidad no puede ser negativa"
-        )
-    
-    # Si cantidad es 0, eliminar el item
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La cantidad no puede ser negativa")
+
+    item = _get_carrito_item(item_id, carrito.id, db)
+    pieza = db.get(WoodPiece, item.wood_piece_id)
+    if not pieza:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Pieza no encontrada")
+
+    diferencia = data.cantidad - item.cantidad  
+
     if data.cantidad == 0:
-        item = _get_carrito_item(item_id, carrito.id, db)
+        pieza.cantidad_reservada -= item.cantidad
         db.delete(item)
         carrito.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(carrito)
         return carrito
-    
-    # Actualizar cantidad
-    item = _get_carrito_item(item_id, carrito.id, db)
+
+    if diferencia > 0 and pieza.stock < diferencia:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Stock insuficiente. Solo hay {pieza.stock} unidades disponibles"
+        )
+
+    pieza.cantidad_reservada += diferencia
     item.cantidad = data.cantidad
     carrito.updated_at = datetime.utcnow()
-    
+
     db.commit()
     db.refresh(carrito)
     return carrito
@@ -136,12 +134,17 @@ async def actualizar_item(
 
 @router.delete("/items/{item_id}")
 async def eliminar_item(
-    item_id: int,  
-    current_user: Annotated[User, Depends(get_current_active_user)], 
+    item_id: int,
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: SessionDep,
 ):
     carrito = _get_or_create_carrito(current_user, db)
     item = _get_carrito_item(item_id, carrito.id, db)
+    pieza = db.get(WoodPiece, item.wood_piece_id)
+
+    if pieza:
+        pieza.cantidad_reservada -= item.cantidad  
+
     db.delete(item)
     carrito.updated_at = datetime.utcnow()
     db.commit()
@@ -150,12 +153,17 @@ async def eliminar_item(
 
 @router.delete("")
 async def vaciar_carrito(
-    current_user: Annotated[User, Depends(get_current_active_user)], 
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: SessionDep,
 ):
     carrito = _get_or_create_carrito(current_user, db)
-    for item in carrito.items[:]:  
+
+    for item in carrito.items[:]:
+        pieza = db.get(WoodPiece, item.wood_piece_id)
+        if pieza:
+            pieza.cantidad_reservada -= item.cantidad  
         db.delete(item)
+
     carrito.updated_at = datetime.utcnow()
     db.commit()
     return {"detail": "Carrito vaciado"}
