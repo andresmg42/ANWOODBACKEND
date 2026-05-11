@@ -28,8 +28,6 @@ mermaid.initialize({
     secondaryBorderColor: dark ? '#0F6E56' : '#0F6E56',
     tertiaryColor: dark ? '#2a1a0a' : '#faeeda',
     tertiaryBorderColor: dark ? '#854F0B' : '#854F0B',
-    lineColor: dark ? '#9c9a92' : '#73726c',
-    textColor: dark ? '#c2c0b6' : '#3d3d3a',
   },
 });
 
@@ -123,11 +121,14 @@ const diagram = `erDiagram
     uuid lote_id FK
     integer largo_mm
     decimal volumen_m3
+    integer cantidad
+    integer cantidad_reservada
     string estado
     decimal costo_unitario
     decimal precio_unitario
     timestamp fecha_ingreso
     timestamp created_at
+    timestamp updated_at
   }
 
   COTIZACION {
