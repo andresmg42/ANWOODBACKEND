@@ -15,7 +15,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3001", "http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=False,
@@ -23,12 +23,10 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(auth.router)
-app.include_router(cart.router) 
-#app.include_router(Inventory.router)
-app.include_router(
-    Inventory.router, 
-    prefix="/api/v1/inventory" #/api/v1/inventory/piezas
-)
+app.include_router(cart.router)
+app.include_router(Inventory.router)
+
+
 
 # Health check
 @app.get("/health")
