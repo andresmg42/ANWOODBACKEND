@@ -62,6 +62,7 @@ class LoteInventory(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
 
+<<<<<<< HEAD
 
 class Client(SQLModel, table=True):
     __tablename__ = "cliente"
@@ -78,13 +79,32 @@ class Client(SQLModel, table=True):
 
     user: Optional["User"] = Relationship(back_populates="clientes")
 
+=======
+class Categoria(SQLModel, table=True):
+    id: int | None = Field(primary_key=True, default=None)
+    nombre: str = Field(index=True)
+    estrategia_precio: str
+    permite_cubicacion: bool = Field(default=True)
+    min_precio_m3: Decimal
+    max_precio_m3: Decimal
+    
+    tipos_madera: list["TipoMadera"] = Relationship(back_populates="categoria")
+>>>>>>> develop
 
 class TipoMadera(SQLModel, table=True):
     __tablename__ = "tipo_madera"
     id: int | None = Field(primary_key=True, default=None)
+
+    categoria_id: int = Field(foreign_key="categoria.id")
     nombre: str = Field(index=True)
-    categoria: str = Field(description="larga, corta o pedido")
+    densidad_kg_m3: Decimal
+    precio_por_metro: Decimal
+    descripcion: Optional[str] = None
+    activo: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    categoria: Optional[Categoria] = Relationship(back_populates="tipos_madera")
     piezas: list["WoodPiece"] = Relationship(back_populates="tipo_madera")
+    
 
 
 class Medida(SQLModel, table=True):
@@ -104,7 +124,9 @@ class WoodPiece(SQLModel, table=True):
     lote_id: int | None = Field(default=None, foreign_key="loteinventory.id")
     largo_mm: int | None = Field(default=None)
     volumen_m3: Decimal | None = Field(default=None)
-    stock: int = Field(default=0)
+    cantidad: int = Field(default=0)
+    cantidad_reservada: int = Field(default=0)
+    stock: int | None = Field(default=None, exclude=True)
     estado: str | None = Field(default="disponible")
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
