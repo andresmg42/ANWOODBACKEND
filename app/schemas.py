@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+﻿from pydantic import BaseModel
 from sqlmodel import SQLModel
 from datetime import datetime
 from decimal import Decimal
@@ -48,6 +48,40 @@ class UserInDB(UserBase):
 
 class ChangeRole(BaseModel):
     name: str | None = None
+
+
+#  Cliente
+
+
+class ClientBase(SQLModel):
+    usuario_id: int
+    tipo_cliente: str
+    nombre_razon_social: str
+    identificacion_fiscal: str
+    email: str | None = None
+    telefono: str | None = None
+    direccion: str | None = None
+    activo: bool | None = True
+
+
+class ClientCreate(ClientBase):
+    pass
+
+
+class ClientUpdate(SQLModel):
+    usuario_id: int | None = None
+    tipo_cliente: str | None = None
+    nombre_razon_social: str | None = None
+    identificacion_fiscal: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+    direccion: str | None = None
+    activo: bool | None = None
+
+
+class ClientPublic(ClientBase):
+    id: int
+    created_at: datetime
 
 
 # ─── Cart ───────────
