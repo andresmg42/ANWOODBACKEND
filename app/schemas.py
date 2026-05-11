@@ -143,11 +143,13 @@ class TipoMaderaRelacion(SQLModel):
     id: int
     nombre: str
 
+
 class CategoriaPublic(SQLModel):
     id: int
     nombre: str
     estrategia_precio: str
     permite_cubicacion: bool
+
 
 class TipoMaderaPublic(SQLModel):
     id: int
@@ -169,12 +171,13 @@ class MedidaRelacion(SQLModel):
     alto_mm: Decimal
     etiqueta: str | None = None
 
+
 class PiezaPublic(SQLModel):
     id: int
     volumen_m3: Decimal
     cantidad: int
     cantidad_reservada: int
-    stock: int 
+    stock: int
     estado: str
     precio_unitario: Decimal | None = None
     costo_unitario: Decimal | None = None
@@ -202,3 +205,28 @@ class MovimientoInventarioPublic(SQLModel):
     created_at: datetime
     usuario_nombre: str | None = None
     pieza_info: dict | None = None
+
+
+# ─── Configuracion ─────────
+
+
+class ConfigurationBase(SQLModel):
+    clave: str
+    valor: str
+    descripcion: str | None = None
+
+
+class ConfigurationCreate(ConfigurationBase):
+    pass
+
+
+class ConfigurationUpdate(SQLModel):
+    clave: str | None = None
+    valor: str | None = None
+    descripcion: str | None = None
+
+
+class ConfigurationPublic(ConfigurationBase):
+    id: int
+    updated_at: datetime
+    updated_by_id: int | None = None

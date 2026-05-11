@@ -41,6 +41,23 @@ class User(SQLModel, table=True):
     cart: Optional["Cart"] = Relationship(back_populates="user")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="usuario")
     clientes: list["Client"] = Relationship(back_populates="user")
+    configuraciones_actualizadas: list["Configuration"] = Relationship(
+        back_populates="updated_by"
+    )
+
+
+class Configuration(SQLModel, table=True):
+    __tablename__ = "configuracion"
+    id: int | None = Field(primary_key=True, default=None)
+    clave: str = Field(index=True, unique=True)
+    valor: str
+    descripcion: str | None = Field(default=None)
+    updated_at: datetime | None = Field(default_factory=datetime.utcnow)
+    updated_by_id: int | None = Field(default=None, foreign_key="user.id")
+
+    updated_by: Optional["User"] = Relationship(
+        back_populates="configuraciones_actualizadas"
+    )
 
 
 class Cart(SQLModel, table=True):
