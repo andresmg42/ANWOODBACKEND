@@ -1,29 +1,19 @@
-from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from typing import Annotated
-from sqlalchemy.orm import selectinload
 
 from ..auth import require_permission, PermissionsEnum, get_current_active_user
 from ..database import SessionDep
-from ..models import WoodPiece, MovimientoInventario, User
-from ..models import Medida, TipoMadera
+from ..models import Medida, MovimientoInventario, TipoMadera, User, WoodPiece
 from ..schemas import (
     PiezaCreate,
     PiezaPublic,
     PiezaUpdate,
 )
+from ..services.cotizacion_service import calcular_volumen
 
 router = APIRouter(tags=["pieza_madera"])
-
-
-def _calcular_volumen(medida: Medida, largo_mm: float) -> Decimal:
-    """Ancho x Alto x Largo en mm³ → m³"""
-    ancho = Decimal(medida.ancho_mm)
-    alto = Decimal(medida.alto_mm)
-    largo = Decimal(largo_mm)
-    vol_mm3 = ancho * alto * largo
-    return vol_mm3 / Decimal("1_000_000_000")
 
 
 @router.post(
@@ -40,9 +30,20 @@ async def crear_pieza(
     medida = db.get(Medida, data.medida_id)
     if not medida:
         raise HTTPException(404, "Medida no encontrada")
-    if not db.get(TipoMadera, data.tipo_madera_id):
+
+    query_tipo = (
+        select(TipoMadera)
+        .where(TipoMadera.id == data.tipo_madera_id)
+        .options(selectinload(TipoMadera.categoria))
+    )
+    tipo_madera = db.exec(query_tipo).first()
+    if not tipo_madera:
         raise HTTPException(404, "Tipo de madera no encontrado")
-    volumen = _calcular_volumen(medida, data.largo_mm)
+    categoria = tipo_madera.categoria
+    if not categoria:
+        raise HTTPException(400, "El tipo de madera no tiene categoría asociada")
+
+    volumen = calcular_volumen(medida, data.largo_m, categoria, tipo_madera)
 
     pieza = WoodPiece(**data.model_dump(), volumen_m3=volumen)
     db.add(pieza)
@@ -52,7 +53,7 @@ async def crear_pieza(
         pieza_id=pieza.id,
         usuario_id=current_user.id,
         tipo_movimiento="ingreso",
-        cantidad=1,
+        cantidad=data.cantidad,
     )
     db.add(movimiento)
     db.commit()
@@ -108,7 +109,23 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
     p = db.get(WoodPiece, pieza_id)
     if not p:
         raise HTTPException(404, "Pieza no encontrada")
-    p.sqlmodel_update(data.model_dump(exclude_unset=True))
+
+    update_data = data.model_dump(exclude_unset=True)
+    if "largo_m" in update_data:
+        medida = db.get(Medida, p.medida_id)
+        tipo_query = (
+            select(TipoMadera)
+            .where(TipoMadera.id == p.tipo_madera_id)
+            .options(selectinload(TipoMadera.categoria))
+        )
+        tipo_madera = db.exec(tipo_query).first()
+        if not medida or not tipo_madera or not tipo_madera.categoria:
+            raise HTTPException(400, "No fue posible recalcular el volumen de la pieza")
+        update_data["volumen_m3"] = calcular_volumen(
+            medida, update_data["largo_m"], tipo_madera.categoria, tipo_madera
+        )
+
+    p.sqlmodel_update(update_data)
     db.commit()
 
     query = (

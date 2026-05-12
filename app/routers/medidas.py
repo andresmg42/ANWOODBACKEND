@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
+
+from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import Medida
-from ..auth import require_permission, PermissionsEnum
+from ..schemas import MedidaCreate, MedidaPublic, MedidaUpdate
 
 router = APIRouter(prefix="/medidas", tags=["medidas"])
 
 
-@router.get("/{medida_id}", response_model=Medida)
+@router.get("/{medida_id}", response_model=MedidaPublic)
 async def obtener_medida(medida_id: int, db: SessionDep):
     medida = db.get(Medida, medida_id)
     if not medida:
@@ -15,36 +17,35 @@ async def obtener_medida(medida_id: int, db: SessionDep):
     return medida
 
 
-@router.get("/", response_model=list[Medida])
+@router.get("/", response_model=list[MedidaPublic])
 async def listar_medidas(db: SessionDep):
     return db.exec(select(Medida)).all()
 
 
 @router.post(
     "/",
-    response_model=Medida,
+    response_model=MedidaPublic,
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
-async def crear_medida(data: Medida, db: SessionDep):
-    db.add(data)
+async def crear_medida(data: MedidaCreate, db: SessionDep):
+    medida = Medida.model_validate(data)
+    db.add(medida)
     db.commit()
-    db.refresh(data)
-    return data
+    db.refresh(medida)
+    return medida
 
 
 @router.patch(
     "/{medida_id}",
-    response_model=Medida,
+    response_model=MedidaPublic,
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
-async def actualizar_medida(medida_id: int, data: dict, db: SessionDep):
+async def actualizar_medida(medida_id: int, data: MedidaUpdate, db: SessionDep):
     db_medida = db.get(Medida, medida_id)
     if not db_medida:
         raise HTTPException(404, "Medida no encontrada")
 
-    for key, value in data.items():
-        setattr(db_medida, key, value)
-
+    db_medida.sqlmodel_update(data.model_dump(exclude_unset=True))
     db.add(db_medida)
     db.commit()
     db.refresh(db_medida)

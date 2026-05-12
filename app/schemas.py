@@ -1,8 +1,9 @@
-﻿from pydantic import BaseModel
-from sqlmodel import SQLModel
-from datetime import datetime
+﻿from datetime import datetime
 from decimal import Decimal
 from typing import Optional
+
+from pydantic import BaseModel
+from sqlmodel import Field, SQLModel
 
 
 class Token(BaseModel):
@@ -50,9 +51,6 @@ class ChangeRole(BaseModel):
     name: str | None = None
 
 
-#  Cliente
-
-
 class ClientBase(SQLModel):
     usuario_id: int
     tipo_cliente: str
@@ -84,9 +82,6 @@ class ClientPublic(ClientBase):
     created_at: datetime
 
 
-# ─── Cart ───────────
-
-
 class ItemCartAdd(SQLModel):
     wood_piece_id: int
     cantidad: int = 1
@@ -110,9 +105,6 @@ class ItemCartUpdate(SQLModel):
     cantidad: int
 
 
-# ─── LoteInventory ─────────
-
-
 class LoteCreate(SQLModel):
     codigo_lote: str
     proveedor: str | None = None
@@ -126,17 +118,56 @@ class LotePublic(LoteCreate):
     created_at: datetime
 
 
-# ─── WoodPiece ─────────────
+class CategoriaBase(SQLModel):
+    nombre: str
+    estrategia_precio: str
+    permite_cubicacion: bool = True
+    formula_cubicacion: str = "largo_x_alto_x_ancho_div_10"
+    min_precio_m3: Decimal | None = None
+    max_precio_m3: Decimal | None = None
 
 
-class PiezaCreate(SQLModel):
-    tipo_madera_id: int
-    medida_id: int
-    lote_id: int | None = None
-    largo_mm: int
-    costo_unitario: Decimal | None = None
-    precio_unitario: Decimal | None = None
-    cantidad: int = 0
+class CategoriaCreate(CategoriaBase):
+    pass
+
+
+class CategoriaUpdate(SQLModel):
+    nombre: str | None = None
+    estrategia_precio: str | None = None
+    permite_cubicacion: bool | None = None
+    formula_cubicacion: str | None = None
+    min_precio_m3: Decimal | None = None
+    max_precio_m3: Decimal | None = None
+
+
+class CategoriaPublic(CategoriaBase):
+    id: int
+
+
+class TipoMaderaBase(SQLModel):
+    categoria_id: int
+    nombre: str
+    densidad_kg_m3: Decimal
+    precio_por_metro: Decimal
+    descripcion: str | None = None
+    activo: bool = True
+    permite_cubicacion: bool = True
+    imagenes: list[str] = Field(default_factory=list)
+
+
+class TipoMaderaCreate(TipoMaderaBase):
+    pass
+
+
+class TipoMaderaUpdate(SQLModel):
+    categoria_id: int | None = None
+    nombre: str | None = None
+    densidad_kg_m3: Decimal | None = None
+    precio_por_metro: Decimal | None = None
+    descripcion: str | None = None
+    activo: bool | None = None
+    permite_cubicacion: bool | None = None
+    imagenes: list[str] | None = None
 
 
 class TipoMaderaRelacion(SQLModel):
@@ -144,37 +175,67 @@ class TipoMaderaRelacion(SQLModel):
     nombre: str
 
 
-class CategoriaPublic(SQLModel):
-    id: int
-    nombre: str
-    estrategia_precio: str
-    permite_cubicacion: bool
-
-
 class TipoMaderaPublic(SQLModel):
     id: int
     nombre: str
     densidad_kg_m3: Decimal
     precio_por_metro: Decimal
+    descripcion: str | None = None
+    activo: bool
+    permite_cubicacion: bool
+    imagenes: list[str] = Field(default_factory=list)
     categoria: Optional[CategoriaPublic] = None
 
 
-class MedidaPublic(SQLModel):
+class MedidaBase(SQLModel):
+    ancho_in: Decimal
+    alto_in: Decimal
+    etiqueta: str | None = None
+    es_estandar: bool = True
+    permite_cubicacion: bool = True
+    precio_minimo_por_metro: Decimal | None = None
+
+
+class MedidaCreate(MedidaBase):
+    pass
+
+
+class MedidaUpdate(SQLModel):
+    ancho_in: Decimal | None = None
+    alto_in: Decimal | None = None
+    etiqueta: str | None = None
+    es_estandar: bool | None = None
+    permite_cubicacion: bool | None = None
+    precio_minimo_por_metro: Decimal | None = None
+
+
+class MedidaPublic(MedidaBase):
     id: int
-    ancho_mm: float
-    alto_mm: float
 
 
 class MedidaRelacion(SQLModel):
     id: int
-    ancho_mm: Decimal
-    alto_mm: Decimal
+    ancho_in: Decimal
+    alto_in: Decimal
     etiqueta: str | None = None
+    es_estandar: bool
+    permite_cubicacion: bool
+
+
+class PiezaCreate(SQLModel):
+    tipo_madera_id: int
+    medida_id: int
+    lote_id: int | None = None
+    largo_m: Decimal
+    costo_unitario: Decimal | None = None
+    precio_unitario: Decimal | None = None
+    cantidad: int = 0
 
 
 class PiezaPublic(SQLModel):
     id: int
-    volumen_m3: Decimal
+    largo_m: Decimal | None = None
+    volumen_m3: Decimal | None = None
     cantidad: int
     cantidad_reservada: int
     stock: int
@@ -188,11 +249,9 @@ class PiezaPublic(SQLModel):
 
 class PiezaUpdate(SQLModel):
     estado: str | None = None
+    largo_m: Decimal | None = None
     precio_unitario: Decimal | None = None
     costo_unitario: Decimal | None = None
-
-
-# ─── Movimiento ─────────────
 
 
 class MovimientoInventarioPublic(SQLModel):
@@ -207,7 +266,105 @@ class MovimientoInventarioPublic(SQLModel):
     pieza_info: dict | None = None
 
 
-# ─── Configuracion ─────────
+class DetalleCotizacionBase(SQLModel):
+    tipo_madera_id: int
+    medida_id: int
+    wood_piece_id: int | None = None
+    largo_m: Decimal
+    cantidad: int = 1
+    notas: str | None = None
+
+
+class DetalleCotizacionCreate(DetalleCotizacionBase):
+    pass
+
+
+class DetalleCotizacionPublic(SQLModel):
+    id: int
+    tipo_madera_id: int
+    medida_id: int
+    wood_piece_id: int | None = None
+    largo_m: Decimal
+    cantidad: int
+    volumen_m3: Decimal
+    precio_por_metro_aplicado: Decimal
+    precio_unitario: Decimal
+    subtotal: Decimal
+    regla_calculo: str
+    notas: str | None = None
+    tipo_madera: Optional[TipoMaderaPublic] = None
+    medida: Optional[MedidaPublic] = None
+
+
+class CotizacionCostosBase(SQLModel):
+    costo_cargue_terrestre: Decimal | None = None
+    costo_descargue_terrestre: Decimal | None = None
+    costo_cargue_maritimo: Decimal | None = None
+    costo_descargue_maritimo: Decimal | None = None
+    precio_epa_por_metro: Decimal | None = None
+    porcentaje_anticipo: Decimal = Decimal("100")
+    notas: str | None = None
+
+
+class CotizacionCreate(CotizacionCostosBase):
+    cliente_id: int
+    detalles: list[DetalleCotizacionCreate]
+
+
+class CotizacionUpdate(SQLModel):
+    detalles: list[DetalleCotizacionCreate] | None = None
+    costo_cargue_terrestre: Decimal | None = None
+    costo_descargue_terrestre: Decimal | None = None
+    costo_cargue_maritimo: Decimal | None = None
+    costo_descargue_maritimo: Decimal | None = None
+    precio_epa_por_metro: Decimal | None = None
+    porcentaje_anticipo: Decimal | None = None
+    notas: str | None = None
+
+
+class CotizacionEstadoUpdate(SQLModel):
+    estado: str
+
+
+class CotizacionPublic(SQLModel):
+    id: int
+    cliente_id: int
+    usuario_id: int
+    estado: str
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
+    subtotal_piezas: Decimal
+    metros_totales: Decimal
+    costo_cargue_terrestre: Decimal
+    costo_descargue_terrestre: Decimal
+    costo_cargue_maritimo: Decimal
+    costo_descargue_maritimo: Decimal
+    costo_salvoconducto_epa: Decimal
+    precio_epa_por_metro_usado: Decimal
+    total: Decimal
+    porcentaje_anticipo: Decimal
+    monto_anticipo: Decimal
+    notas: str | None = None
+    detalles: list[DetalleCotizacionPublic] = []
+
+
+class CotizacionPreviewIn(CotizacionCreate):
+    pass
+
+
+class CotizacionPreviewOut(SQLModel):
+    subtotal_piezas: Decimal
+    metros_totales: Decimal
+    costo_cargue_terrestre: Decimal
+    costo_descargue_terrestre: Decimal
+    costo_cargue_maritimo: Decimal
+    costo_descargue_maritimo: Decimal
+    costo_salvoconducto_epa: Decimal
+    precio_epa_por_metro_usado: Decimal
+    total: Decimal
+    porcentaje_anticipo: Decimal
+    monto_anticipo: Decimal
+    detalles: list[DetalleCotizacionPublic]
 
 
 class ConfigurationBase(SQLModel):

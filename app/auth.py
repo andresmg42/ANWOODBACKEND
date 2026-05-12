@@ -37,6 +37,11 @@ class PermissionsEnum(str, Enum):
     # Inventario
     VER_INVENTARIO = "ver_inventario"
     GESTIONAR_INVENTARIO = "gestionar_inventario"
+    CREATE_COTIZACION = "create_cotizacion"
+    VIEW_COTIZACION = "view_cotizacion"
+    UPDATE_COTIZACION = "update_cotizacion"
+    DELETE_COTIZACION = "delete_cotizacion"
+    APROBAR_COTIZACION = "aprobar_cotizacion"
 
     
 
@@ -97,8 +102,8 @@ async def get_current_user(
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except InvalidTokenError:
-        raise credentials_exception
+    except InvalidTokenError as exc:
+        raise credentials_exception from exc
     user = get_user(db, username=token_data.username)
     if user is None:
         raise credentials_exception

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from .routers import (
     auth,
     users,
+    cotizaciones,
     lote_inventory,
     cart,
     pieza_madera,
@@ -17,7 +18,7 @@ from .routers import (
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     create_db_and_tables()
     yield
 
@@ -34,6 +35,7 @@ app.add_middleware(
 
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(cotizaciones.router)
 app.include_router(cart.router)
 app.include_router(lote_inventory.router)
 app.include_router(pieza_madera.router)
@@ -46,5 +48,5 @@ app.include_router(configuration.router)
 
 # Health check
 @app.get("/health")
-def health_check(session: SessionDep):
+def health_check(_session: SessionDep):
     return {"ok": True}
