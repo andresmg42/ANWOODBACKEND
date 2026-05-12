@@ -145,8 +145,8 @@ class Categoria(SQLModel, table=True):
     nombre: str = Field(index=True)
     estrategia_precio: str
     permite_cubicacion: bool = Field(default=True)
-    min_precio_m3: Decimal
-    max_precio_m3: Decimal
+    min_precio_m3: Decimal = Field(default=None)
+    max_precio_m3: Decimal | None = Field(default=None, nullable=True)
 
     tipos_madera: list["TipoMadera"] = Relationship(back_populates="categoria")
 
