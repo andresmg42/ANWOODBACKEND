@@ -37,8 +37,7 @@ class PermissionsEnum(str, Enum):
     # Inventario
     VER_INVENTARIO = "ver_inventario"
     GESTIONAR_INVENTARIO = "gestionar_inventario"
-
-    
+    DELETE_QUOTATION = "delete_quotation"
 
 
 class RoleEnum(str, Enum):

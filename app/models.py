@@ -94,6 +94,50 @@ class Client(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
     user: Optional["User"] = Relationship(back_populates="clientes")
+    cotizaciones: list["Cotizacion"] = Relationship(back_populates="cliente")
+
+
+class Cotizacion(SQLModel, table=True):
+    __tablename__ = "cotizacion"
+    id: int | None = Field(primary_key=True, default=None)
+    cliente_id: int = Field(foreign_key="cliente.id")
+    numero_cotizacion: str = Field(index=True, unique=True)
+    nombre_cliente: str
+    email_cliente: str | None = Field(default=None)
+    telefono_cliente: str | None = Field(default=None)
+    estado: str = Field(default="pendiente")
+    tipo_compra: str | None = Field(default=None)
+    total_m3: Decimal = Field(default=Decimal("0"))
+    subtotal: Decimal = Field(default=Decimal("0"))
+    costo_transporte: Decimal = Field(default=Decimal("0"))
+    costo_cargue: Decimal = Field(default=Decimal("0"))
+    costo_descargue: Decimal = Field(default=Decimal("0"))
+    costo_salvoconducto: Decimal = Field(default=Decimal("0"))
+    porcentaje_anticipo: Decimal = Field(default=Decimal("0"))
+    valor_anticipo: Decimal = Field(default=Decimal("0"))
+    total_monto: Decimal = Field(default=Decimal("0"))
+    fecha_emision: datetime | None = Field(default_factory=datetime.utcnow)
+    fecha_vencimiento: datetime | None = Field(default=None)
+    salvoconducto_es_manual: bool = Field(default=False)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    cliente: Optional["Client"] = Relationship(back_populates="cotizaciones")
+    detalles: list["DetalleCotizacion"] = Relationship(back_populates="cotizacion")
+
+
+class DetalleCotizacion(SQLModel, table=True):
+    __tablename__ = "detalle_cotizacion"
+    id: int | None = Field(primary_key=True, default=None)
+    cotizacion_id: int = Field(foreign_key="cotizacion.id")
+    pieza_id: int = Field(foreign_key="woodpiece.id")
+    descripcion_item: str | None = Field(default=None)
+    cantidad: int = Field(default=1)
+    volumen_unitario_m3: Decimal
+    precio_unitario_snapshot: Decimal
+    subtotal: Decimal
+
+    cotizacion: Optional["Cotizacion"] = Relationship(back_populates="detalles")
+    pieza: Optional["WoodPiece"] = Relationship(back_populates="detalles_cotizacion")
 
 
 class Categoria(SQLModel, table=True):
@@ -153,7 +197,10 @@ class WoodPiece(SQLModel, table=True):
     lote: Optional["LoteInventory"] = Relationship(back_populates="piezas")
     items_carrito: list["ItemCart"] = Relationship(back_populates="pieza")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="pieza")
-    # detalles_cotizacion: list["DetalleCotizacion"] = Relationship(back_populates="pieza")
+    detalles_cotizacion: list["DetalleCotizacion"] = Relationship(
+        back_populates="pieza"
+    )
+
     @property
     def stock(self) -> int:
         return self.cantidad - self.cantidad_reservada
