@@ -230,3 +230,85 @@ class ConfigurationPublic(ConfigurationBase):
     id: int
     updated_at: datetime
     updated_by_id: int | None = None
+
+
+# ─── Cotizacion ─────────
+
+
+class CotizacionBase(SQLModel):
+    cliente_id: int
+    numero_cotizacion: str
+    nombre_cliente: str | None = None
+    email_cliente: str | None = None
+    telefono_cliente: str | None = None
+    estado: str | None = None
+    tipo_compra: str | None = None
+    costo_transporte: Decimal | None = None
+    costo_cargue: Decimal | None = None
+    costo_descargue: Decimal | None = None
+    salvoconducto_es_manual: bool | None = False
+
+
+class CotizacionCreate(CotizacionBase):
+    pass
+
+
+class CotizacionUpdate(SQLModel):
+    nombre_cliente: str | None = None
+    email_cliente: str | None = None
+    telefono_cliente: str | None = None
+    estado: str | None = None
+    tipo_compra: str | None = None
+    costo_transporte: Decimal | None = None
+    costo_cargue: Decimal | None = None
+    costo_descargue: Decimal | None = None
+    costo_salvoconducto: Decimal | None = None
+    porcentaje_anticipo: Decimal | None = None
+    salvoconducto_es_manual: bool | None = None
+    fecha_vencimiento: datetime | None = None
+    recalcular: bool | None = False
+
+
+class CotizacionPublic(SQLModel):
+    id: int
+    cliente_id: int
+    numero_cotizacion: str
+    nombre_cliente: str
+    email_cliente: str | None = None
+    telefono_cliente: str | None = None
+    estado: str
+    tipo_compra: str | None = None
+    total_m3: Decimal
+    subtotal: Decimal
+    costo_transporte: Decimal
+    costo_cargue: Decimal
+    costo_descargue: Decimal
+    costo_salvoconducto: Decimal
+    porcentaje_anticipo: Decimal
+    valor_anticipo: Decimal
+    total_monto: Decimal
+    fecha_emision: datetime
+    fecha_vencimiento: datetime | None = None
+    salvoconducto_es_manual: bool
+    created_at: datetime
+
+
+# ─── Detalle Cotizacion ─────────
+
+
+class DetalleCotizacionBase(SQLModel):
+    cotizacion_id: int
+    pieza_id: int
+    descripcion_item: str | None = None
+    cantidad: int
+    volumen_unitario_m3: Decimal
+    precio_unitario_snapshot: Decimal
+    subtotal: Decimal
+
+
+class DetalleCotizacionCreate(DetalleCotizacionBase):
+    pass
+
+
+class DetalleCotizacionPublic(DetalleCotizacionBase):
+    id: int

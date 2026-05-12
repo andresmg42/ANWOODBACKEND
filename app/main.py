@@ -13,6 +13,7 @@ from .routers import (
     categorias,
     client,
     configuration,
+    quotation,
 )
 
 
@@ -42,6 +43,7 @@ app.include_router(tipos_madera.router)
 app.include_router(medidas.router)
 app.include_router(categorias.router)
 app.include_router(configuration.router)
+app.include_router(quotation.router)
 
 
 # Health check
