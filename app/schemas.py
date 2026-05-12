@@ -144,11 +144,21 @@ class TipoMaderaRelacion(SQLModel):
     nombre: str
 
 
+class CategoriaIn(SQLModel):
+    nombre: str
+    estrategia_precio: str
+    permite_cubicacion: bool
+    min_precio_m3: Decimal
+    max_precio_m3: Decimal | None = None
+
+
 class CategoriaPublic(SQLModel):
     id: int
     nombre: str
     estrategia_precio: str
     permite_cubicacion: bool
+    min_precio_m3: Decimal
+    max_precio_m3: Decimal | None = None
 
 
 class TipoMaderaPublic(SQLModel):
