@@ -19,6 +19,7 @@ def seed_data(db: Session):
             PermissionsEnum.UPDATE_USER,
             PermissionsEnum.VER_INVENTARIO,
             PermissionsEnum.GESTIONAR_INVENTARIO,
+            PermissionsEnum.DELETE_QUOTATION,
         ],
     )
     assign_permissions_to_role(

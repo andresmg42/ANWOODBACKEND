@@ -3,7 +3,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
 
-from ..auth import RoleEnum, require_role
+from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import (
     Cart,
@@ -355,7 +355,7 @@ async def actualizar_cotizacion(
 @router.delete(
     "/{cotizacion_id}",
     status_code=204,
-    dependencies=[Depends(require_role(RoleEnum.ADMIN))],
+    dependencies=[Depends(require_permission(PermissionsEnum.DELETE_QUOTATION))],
 )
 async def eliminar_cotizacion(cotizacion_id: int, db: SessionDep):
     cotizacion = db.get(Cotizacion, cotizacion_id)
