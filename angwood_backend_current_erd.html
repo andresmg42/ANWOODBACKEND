@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANWOOD Backend ERD Actual</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Anthropic Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f10;
+      color: #f2f2f2;
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: #fafaf8;
+        color: #222226;
+      }
+    }
+
+    main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0 0 20px;
+      opacity: 0.85;
+    }
+
+    #erd {
+      overflow: auto;
+      padding: 16px 0;
+    }
+
+    #erd svg {
+      max-width: none;
+      height: auto;
+    }
+
+    #erd svg.erDiagram .divider path {
+      stroke-opacity: 0.5;
+    }
+
+    #erd svg.erDiagram .row-rect-odd path,
+    #erd svg.erDiagram .row-rect-odd rect,
+    #erd svg.erDiagram .row-rect-even path,
+    #erd svg.erDiagram .row-rect-even rect {
+      stroke: none !important;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="erd"></div>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    const dark = matchMedia("(prefers-color-scheme: white)").matches;
+    await document.fonts.ready;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "base",
+      fontFamily: '"Anthropic Sans", sans-serif',
+      themeVariables: {
+        darkMode: dark,
+        fontSize: "13px",
+        fontFamily: '"Anthropic Sans", sans-serif',
+        lineColor: dark ? "#9c9a92" : "#73726c",
+        textColor: dark ? "#c2c0b6" : "#3d3d3a",
+        primaryColor: dark ? "#2a2a40" : "#eeedfe",
+        primaryBorderColor: "#534AB7",
+        primaryTextColor: dark ? "#c2c0b6" : "#26215C",
+        secondaryColor: dark ? "#0a2a20" : "#e1f5ee",
+        secondaryBorderColor: "#0F6E56",
+        tertiaryColor: dark ? "#2a1a0a" : "#faeeda",
+        tertiaryBorderColor: "#854F0B",
+      },
+    });
+
+    const diagram = `erDiagram
+
+      ROLE {
+        int id PK
+        string name
+      }
+
+      PERMISSION {
+        int id PK
+        string name
+      }
+
+      ROLEPERMISSIONS {
+        int role_id PK, FK
+        int permission_id PK, FK
+      }
+
+      USER {
+        int id PK
+        string username
+        string email
+        string full_name
+        string phone
+        boolean disabled
+        int role_id FK
+        string hashed_password
+      }
+
+      CONFIGURACION {
+        int id PK
+        string clave
+        string valor
+        string descripcion
+        datetime updated_at
+        int updated_by_id FK
+      }
+
+      CART {
+        int id PK
+        int user_id FK
+        datetime created_at
+        datetime updated_at
+      }
+
+      ITEMCART {
+        int id PK
+        int carrito_id FK
+        int wood_piece_id FK
+        int cantidad
+        datetime added_at
+      }
+
+      LOTEINVENTORY {
+        int id PK
+        string codigo_lote
+        string proveedor
+        datetime fecha_ingreso
+        decimal costo_total
+        string estado
+        datetime created_at
+      }
+
+      CLIENTE {
+        int id PK
+        int usuario_id FK
+        string tipo_cliente
+        string nombre_razon_social
+        string identificacion_fiscal
+        string email
+        string telefono
+        string direccion
+        boolean activo
+        datetime created_at
+      }
+
+      CATEGORIA {
+        int id PK
+        string nombre
+        string estrategia_precio
+        boolean permite_cubicacion
+        string formula_cubicacion
+        decimal min_precio_m3
+        decimal max_precio_m3
+      }
+
+      TIPO_MADERA {
+        int id PK
+        int categoria_id FK
+        string nombre
+        decimal densidad_kg_m3
+        decimal precio_por_metro
+        string descripcion
+        boolean activo
+        boolean permite_cubicacion
+        json imagenes
+        datetime created_at
+      }
+
+      MEDIDA {
+        int id PK
+        decimal ancho_in
+        decimal alto_in
+        string etiqueta
+        boolean es_estandar
+        boolean permite_cubicacion
+        decimal precio_minimo_por_metro
+      }
+
+      WOODPIECE {
+        int id PK
+        int tipo_madera_id FK
+        int medida_id FK
+        int lote_id FK
+        decimal largo_m
+        decimal volumen_m3
+        int cantidad
+        int cantidad_reservada
+        string estado
+        decimal costo_unitario
+        decimal precio_unitario
+        datetime fecha_ingreso
+        datetime created_at
+      }
+
+      MOVIMIENTOINVENTARIO {
+        int id PK
+        int pieza_id FK
+        int usuario_id FK
+        string tipo_movimiento
+        int cantidad
+        int referencia_id
+        datetime created_at
+      }
+
+      COTIZACION {
+        int id PK
+        int cliente_id FK
+        int usuario_id FK
+        string estado
+        datetime fecha_creacion
+        datetime fecha_actualizacion
+        decimal subtotal_piezas
+        decimal metros_totales
+        decimal costo_cargue_terrestre
+        decimal costo_descargue_terrestre
+        decimal costo_cargue_maritimo
+        decimal costo_descargue_maritimo
+        decimal costo_salvoconducto_epa
+        decimal precio_epa_por_metro_usado
+        decimal total
+        decimal porcentaje_anticipo
+        decimal monto_anticipo
+        string notas
+      }
+
+      DETALLE_COTIZACION {
+        int id PK
+        int cotizacion_id FK
+        int tipo_madera_id FK
+        int medida_id FK
+        int wood_piece_id FK
+        decimal largo_m
+        int cantidad
+        decimal volumen_m3
+        decimal precio_por_metro_aplicado
+        decimal precio_unitario
+        decimal subtotal
+        string regla_calculo
+        string notas
+      }
+
+      ROLE ||--o{ USER : has
+      ROLE ||--o{ ROLEPERMISSIONS : grants
+      PERMISSION ||--o{ ROLEPERMISSIONS : links
+
+      USER ||--o{ CONFIGURACION : updates
+      USER ||--o| CART : owns
+      USER ||--o{ CLIENTE : manages
+      USER ||--o{ MOVIMIENTOINVENTARIO : records
+      USER ||--o{ COTIZACION : creates
+
+      CART ||--o{ ITEMCART : contains
+      WOODPIECE ||--o{ ITEMCART : added_to
+
+      LOTEINVENTORY ||--o{ WOODPIECE : groups
+      CATEGORIA ||--o{ TIPO_MADERA : classifies
+      TIPO_MADERA ||--o{ WOODPIECE : defines
+      MEDIDA ||--o{ WOODPIECE : sizes
+      WOODPIECE ||--o{ MOVIMIENTOINVENTARIO : tracked_by
+
+      CLIENTE ||--o{ COTIZACION : receives
+      COTIZACION ||--o{ DETALLE_COTIZACION : contains
+      TIPO_MADERA ||--o{ DETALLE_COTIZACION : quoted_as
+      MEDIDA ||--o{ DETALLE_COTIZACION : measured_as
+      WOODPIECE |o--o{ DETALLE_COTIZACION : optionally_sources
+    `;
+
+    try {
+      const { svg } = await mermaid.render("erd-svg", diagram);
+      document.getElementById("erd").innerHTML = svg;
+
+      document.querySelectorAll("#erd svg.erDiagram .node").forEach((node) => {
+        const firstPath = node.querySelector("path[d]");
+        if (!firstPath) return;
+
+        const d = firstPath.getAttribute("d");
+        const nums = d.match(/-?[\\d.]+/g)?.map(Number);
+        if (!nums || nums.length < 8) return;
+
+        const xs = [nums[0], nums[2], nums[4], nums[6]];
+        const ys = [nums[1], nums[3], nums[5], nums[7]];
+        const x = Math.min(...xs);
+        const y = Math.min(...ys);
+        const w = Math.max(...xs) - x;
+        const h = Math.max(...ys) - y;
+
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", w);
+        rect.setAttribute("height", h);
+        rect.setAttribute("rx", "8");
+
+        for (const attr of ["fill", "stroke", "stroke-width", "class", "style"]) {
+          if (firstPath.hasAttribute(attr)) {
+            rect.setAttribute(attr, firstPath.getAttribute(attr));
+          }
+        }
+
+        firstPath.replaceWith(rect);
+      });
+    } catch (error) {
+      document.getElementById("erd").innerHTML =
+        "<pre style='white-space: pre-wrap; color: #d33;'>Error renderizando Mermaid:\\n" +
+        String(error) +
+        "</pre>";
+    }
+  </script>
+</body>
+</html>
