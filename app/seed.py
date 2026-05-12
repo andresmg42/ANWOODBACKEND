@@ -1,6 +1,7 @@
 from sqlmodel import Session
 from .auth import create_permissions, create_role, assign_permissions_to_role
 from .auth import RoleEnum, PermissionsEnum
+from .routers.configuration import create_configuration_seed
 
 
 def seed_data(db: Session):
@@ -27,4 +28,39 @@ def seed_data(db: Session):
             PermissionsEnum.CREATE_USER,
             PermissionsEnum.VIEW_USER,
         ],
+    )
+
+    create_configuration_seed(
+        db,
+        "porcentaje_anticipo",
+        20,
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_por_m3",
+        10,
+    )
+
+    create_configuration_seed(
+        db,
+        "dias_vencimiento_cotizacion",
+        10,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_transporte_defecto",
+        500000,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_cargue_defecto",
+        200000,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_descargue_defecto",
+        200000,
     )
