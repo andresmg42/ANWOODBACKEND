@@ -387,3 +387,4 @@ class ConfigurationPublic(ConfigurationBase):
     id: int
     updated_at: datetime
     updated_by_id: int | None = None
+    updated_by_nombre: str | None = None

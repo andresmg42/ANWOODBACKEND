@@ -40,7 +40,9 @@ async def crear_configuracion(
     db.add(config)
     db.commit()
     db.refresh(config)
-    return config
+    c_dict = config.model_dump()
+    c_dict["updated_by_nombre"] = current_user.full_name
+    return c_dict
 
 
 @router.get(
@@ -49,7 +51,13 @@ async def crear_configuracion(
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def listar_configuracion(db: SessionDep):
-    return db.exec(select(Configuration)).all()
+    configs = db.exec(select(Configuration)).all()
+    results = []
+    for c in configs:
+        c_dict = c.model_dump()
+        c_dict["updated_by_nombre"] = c.updated_by.full_name if c.updated_by else None
+        results.append(c_dict)
+    return results
 
 
 @router.get(
@@ -61,7 +69,9 @@ async def obtener_configuracion(config_id: int, db: SessionDep):
     config = db.get(Configuration, config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Configuracion no encontrada")
-    return config
+    c_dict = config.model_dump()
+    c_dict["updated_by_nombre"] = config.updated_by.full_name if config.updated_by else None
+    return c_dict
 
 
 @router.patch(
@@ -98,7 +108,10 @@ async def actualizar_configuracion(
     db.add(config)
     db.commit()
     db.refresh(config)
-    return config
+    
+    c_dict = config.model_dump()
+    c_dict["updated_by_nombre"] = current_user.full_name
+    return c_dict
 
 
 @router.delete(
