@@ -2,12 +2,11 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
-
+from sqlalchemy import func
 from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import (
     Cart,
-    Client,
     Configuration,
     Cotizacion,
     DetalleCotizacion,
@@ -47,22 +46,16 @@ def _get_config_int(
         raise HTTPException(400, f"Invalid configuracion value for {key}")
 
 
-def _get_cart_items_for_client(
-    db: SessionDep, cliente_id: int
-) -> tuple[Client, list[ItemCart]]:
-    cliente = db.get(Client, cliente_id)
-    if not cliente:
-        raise HTTPException(404, "Cliente no encontrado")
-
-    carrito = db.exec(select(Cart).where(Cart.user_id == cliente.usuario_id)).first()
+def _get_cart_items_for_user(db: SessionDep, user_id: int) -> list[ItemCart]:
+    carrito = db.exec(select(Cart).where(Cart.user_id == user_id)).first()
     if not carrito:
-        raise HTTPException(400, "El cliente no tiene carrito")
+        raise HTTPException(400, "El usuario no tiene carrito")
 
     items = db.exec(select(ItemCart).where(ItemCart.carrito_id == carrito.id)).all()
     if not items:
         raise HTTPException(400, "El carrito esta vacio")
 
-    return cliente, items
+    return items
 
 
 def _calcular_totales_desde_carrito(
@@ -135,6 +128,17 @@ def _calcular_valores_derivados(
     return valor_anticipo, total_monto
 
 
+def generate_numero_cotizacion(db: SessionDep) -> str:
+    year = datetime.utcnow().year
+    result = db.exec(
+        select(func.count(Cotizacion.id)).where(
+            func.extract("year", Cotizacion.created_at) == year
+        )
+    )
+    count = (result.one() or 0) + 1
+    return f"COT-{year}-{str(count).zfill(4)}"
+
+
 @router.post(
     "",
     response_model=CotizacionPublic,
@@ -151,7 +155,7 @@ async def crear_cotizacion(
     if existente:
         raise HTTPException(400, "El numero de cotizacion ya existe")
 
-    cliente, items = _get_cart_items_for_client(db, data.cliente_id)
+    items = _get_cart_items_for_user(db, data.user_id)
     total_m3, subtotal = _calcular_totales_desde_carrito(db, items)
 
     porcentaje_anticipo = _get_config_decimal(db, "porcentaje_anticipo")
@@ -194,17 +198,10 @@ async def crear_cotizacion(
 
     fecha_emision = datetime.utcnow()
     fecha_vencimiento = fecha_emision + timedelta(days=dias_vencimiento)
-
-    nombre_cliente = data.nombre_cliente or cliente.nombre_razon_social
-    email_cliente = data.email_cliente or cliente.email
-    telefono_cliente = data.telefono_cliente or cliente.telefono
-
+    numero_cotizacion = generate_numero_cotizacion(db)
     cotizacion = Cotizacion(
-        cliente_id=data.cliente_id,
-        numero_cotizacion=data.numero_cotizacion,
-        nombre_cliente=nombre_cliente,
-        email_cliente=email_cliente,
-        telefono_cliente=telefono_cliente,
+        user_id=data.user_id,
+        numero_cotizacion=numero_cotizacion,
         estado=data.estado or "pendiente",
         tipo_compra=data.tipo_compra,
         total_m3=total_m3,
@@ -268,7 +265,7 @@ async def actualizar_cotizacion(
     recalcular = update_data.pop("recalcular", False)
 
     if recalcular:
-        cliente, items = _get_cart_items_for_client(db, cotizacion.cliente_id)
+        items = _get_cart_items_for_user(db, cotizacion.user_id)
         total_m3, subtotal = _calcular_totales_desde_carrito(db, items)
 
         porcentaje_anticipo = _get_config_decimal(db, "porcentaje_anticipo")

@@ -60,7 +60,6 @@ class User(SQLModel, table=True):
     role: Optional["Role"] = Relationship(back_populates="users")
     cart: Optional["Cart"] = Relationship(back_populates="user")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="usuario")
-    clientes: list["Client"] = Relationship(back_populates="user")
     configuraciones_actualizadas: list["Configuration"] = Relationship(
         back_populates="updated_by"
     )
@@ -101,31 +100,27 @@ class LoteInventory(SQLModel, table=True):
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
 
 
-class Client(SQLModel, table=True):
-    __tablename__ = "cliente"
-    id: int | None = Field(primary_key=True, default=None)
-    usuario_id: int | None = Field(default=None, foreign_key="user.id")
-    tipo_cliente: str
-    nombre_razon_social: str
-    identificacion_fiscal: str
-    email: str | None = Field(default=None)
-    telefono: str | None = Field(default=None)
-    direccion: str | None = Field(default=None)
-    activo: bool | None = Field(default=True)
-    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+# class Client(SQLModel, table=True):
+#     __tablename__ = "cliente"
+#     id: int | None = Field(primary_key=True, default=None)
+#     usuario_id: int | None = Field(default=None, foreign_key="user.id")
+#     tipo_cliente: str
+#     nombre_razon_social: str
+#     identificacion_fiscal: str
+#     email: str | None = Field(default=None)
+#     telefono: str | None = Field(default=None)
+#     direccion: str | None = Field(default=None)
+#     activo: bool | None = Field(default=True)
+#     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
-    user: Optional["User"] = Relationship(back_populates="clientes")
-    cotizaciones: list["Cotizacion"] = Relationship(back_populates="cliente")
+#     user: Optional["User"] = Relationship(back_populates="clientes")
 
 
 class Cotizacion(SQLModel, table=True):
     __tablename__ = "cotizacion"
     id: int | None = Field(primary_key=True, default=None)
-    cliente_id: int = Field(foreign_key="cliente.id")
+    user_id: int = Field(foreign_key="user.id")
     numero_cotizacion: str = Field(index=True, unique=True)
-    nombre_cliente: str
-    email_cliente: str | None = Field(default=None)
-    telefono_cliente: str | None = Field(default=None)
     estado: str = Field(default="pendiente")
     tipo_compra: str | None = Field(default=None)
     total_m3: Decimal = Field(default=Decimal("0"))
@@ -142,7 +137,7 @@ class Cotizacion(SQLModel, table=True):
     salvoconducto_es_manual: bool = Field(default=False)
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
-    cliente: Optional["Client"] = Relationship(back_populates="cotizaciones")
+    usuario: Optional["User"] = Relationship(back_populates="cotizaciones")
     detalles: list["DetalleCotizacion"] = Relationship(back_populates="cotizacion")
 
 
@@ -193,9 +188,6 @@ class TipoMadera(SQLModel, table=True):
 
     categoria: Optional["Categoria"] = Relationship(back_populates="tipos_madera")
     piezas: list["WoodPiece"] = Relationship(back_populates="tipo_madera")
-    detalles_cotizacion: list["DetalleCotizacion"] = Relationship(
-        back_populates="tipo_madera"
-    )
 
 
 class Medida(SQLModel, table=True):
@@ -208,9 +200,6 @@ class Medida(SQLModel, table=True):
     precio_minimo_por_metro: Decimal | None = Field(default=None)
 
     piezas: list["WoodPiece"] = Relationship(back_populates="medida")
-    detalles_cotizacion: list["DetalleCotizacion"] = Relationship(
-        back_populates="medida"
-    )
 
 
 class WoodPiece(SQLModel, table=True):

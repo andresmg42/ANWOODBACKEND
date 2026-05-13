@@ -51,37 +51,6 @@ class ChangeRole(BaseModel):
     name: str | None = None
 
 
-class ClientBase(SQLModel):
-    usuario_id: int
-    tipo_cliente: str
-    nombre_razon_social: str
-    identificacion_fiscal: str
-    email: str | None = None
-    telefono: str | None = None
-    direccion: str | None = None
-    activo: bool | None = True
-
-
-class ClientCreate(ClientBase):
-    pass
-
-
-class ClientUpdate(SQLModel):
-    usuario_id: int | None = None
-    tipo_cliente: str | None = None
-    nombre_razon_social: str | None = None
-    identificacion_fiscal: str | None = None
-    email: str | None = None
-    telefono: str | None = None
-    direccion: str | None = None
-    activo: bool | None = None
-
-
-class ClientPublic(ClientBase):
-    id: int
-    created_at: datetime
-
-
 class ItemCartAdd(SQLModel):
     wood_piece_id: int
     cantidad: int = 1
@@ -283,107 +252,6 @@ class MovimientoInventarioPublic(SQLModel):
     pieza_info: dict | None = None
 
 
-class DetalleCotizacionBase(SQLModel):
-    tipo_madera_id: int
-    medida_id: int
-    wood_piece_id: int | None = None
-    largo_m: Decimal
-    cantidad: int = 1
-    notas: str | None = None
-
-
-class DetalleCotizacionCreate(DetalleCotizacionBase):
-    pass
-
-
-class DetalleCotizacionPublic(SQLModel):
-    id: int
-    tipo_madera_id: int
-    medida_id: int
-    wood_piece_id: int | None = None
-    largo_m: Decimal
-    cantidad: int
-    volumen_m3: Decimal
-    precio_por_metro_aplicado: Decimal
-    precio_unitario: Decimal
-    subtotal: Decimal
-    regla_calculo: str
-    notas: str | None = None
-    tipo_madera: Optional[TipoMaderaPublic] = None
-    medida: Optional[MedidaPublic] = None
-
-
-class CotizacionCostosBase(SQLModel):
-    costo_cargue_terrestre: Decimal | None = None
-    costo_descargue_terrestre: Decimal | None = None
-    costo_cargue_maritimo: Decimal | None = None
-    costo_descargue_maritimo: Decimal | None = None
-    precio_epa_por_metro: Decimal | None = None
-    porcentaje_anticipo: Decimal = Decimal("100")
-    notas: str | None = None
-
-
-class CotizacionCreate(CotizacionCostosBase):
-    cliente_id: int
-    detalles: list[DetalleCotizacionCreate]
-
-
-class CotizacionUpdate(SQLModel):
-    detalles: list[DetalleCotizacionCreate] | None = None
-    costo_cargue_terrestre: Decimal | None = None
-    costo_descargue_terrestre: Decimal | None = None
-    costo_cargue_maritimo: Decimal | None = None
-    costo_descargue_maritimo: Decimal | None = None
-    precio_epa_por_metro: Decimal | None = None
-    porcentaje_anticipo: Decimal | None = None
-    notas: str | None = None
-
-
-class CotizacionEstadoUpdate(SQLModel):
-    estado: str
-
-
-class CotizacionPublic(SQLModel):
-    id: int
-    cliente_id: int
-    usuario_id: int
-    estado: str
-    fecha_creacion: datetime
-    fecha_actualizacion: datetime
-    subtotal_piezas: Decimal
-    metros_totales: Decimal
-    costo_cargue_terrestre: Decimal
-    costo_descargue_terrestre: Decimal
-    costo_cargue_maritimo: Decimal
-    costo_descargue_maritimo: Decimal
-    costo_salvoconducto_epa: Decimal
-    precio_epa_por_metro_usado: Decimal
-    total: Decimal
-    porcentaje_anticipo: Decimal
-    monto_anticipo: Decimal
-    notas: str | None = None
-    detalles: list[DetalleCotizacionPublic] = []
-
-
-class CotizacionPreviewIn(CotizacionCreate):
-    pass
-
-
-class CotizacionPreviewOut(SQLModel):
-    subtotal_piezas: Decimal
-    metros_totales: Decimal
-    costo_cargue_terrestre: Decimal
-    costo_descargue_terrestre: Decimal
-    costo_cargue_maritimo: Decimal
-    costo_descargue_maritimo: Decimal
-    costo_salvoconducto_epa: Decimal
-    precio_epa_por_metro_usado: Decimal
-    total: Decimal
-    porcentaje_anticipo: Decimal
-    monto_anticipo: Decimal
-    detalles: list[DetalleCotizacionPublic]
-
-
 class ConfigurationBase(SQLModel):
     clave: str
     valor: str
@@ -410,11 +278,8 @@ class ConfigurationPublic(ConfigurationBase):
 
 
 class CotizacionBase(SQLModel):
-    cliente_id: int
-    numero_cotizacion: str
-    nombre_cliente: str | None = None
-    email_cliente: str | None = None
-    telefono_cliente: str | None = None
+    user_id: int
+    numero_cotizacion: str | None = None
     estado: str | None = None
     tipo_compra: str | None = None
     costo_transporte: Decimal | None = None
@@ -428,9 +293,6 @@ class CotizacionCreate(CotizacionBase):
 
 
 class CotizacionUpdate(SQLModel):
-    nombre_cliente: str | None = None
-    email_cliente: str | None = None
-    telefono_cliente: str | None = None
     estado: str | None = None
     tipo_compra: str | None = None
     costo_transporte: Decimal | None = None
@@ -445,11 +307,8 @@ class CotizacionUpdate(SQLModel):
 
 class CotizacionPublic(SQLModel):
     id: int
-    cliente_id: int
+    user_id: int
     numero_cotizacion: str
-    nombre_cliente: str
-    email_cliente: str | None = None
-    telefono_cliente: str | None = None
     estado: str
     tipo_compra: str | None = None
     total_m3: Decimal
@@ -481,7 +340,15 @@ class DetalleCotizacionBase(SQLModel):
 
 
 class DetalleCotizacionCreate(DetalleCotizacionBase):
-    pass
+    subtotal: Decimal | None = None
+
+
+class DetalleCotizacionUpdate(SQLModel):
+    descripcion_item: str | None = None
+    cantidad: int | None = None
+    volumen_unitario_m3: Decimal | None = None
+    precio_unitario_snapshot: Decimal | None = None
+    subtotal: Decimal | None = None
 
 
 class DetalleCotizacionPublic(DetalleCotizacionBase):

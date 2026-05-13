@@ -37,7 +37,6 @@ def seed_data(db: Session):
         [
             PermissionsEnum.CREATE_USER,
             PermissionsEnum.VIEW_USER,
-            PermissionsEnum.VIEW_COTIZACION,
         ],
     )
 
@@ -52,12 +51,14 @@ def seed_data(db: Session):
         estrategia_precio="por_volumen",
         permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
+        min_precio_m3=1000,
     )
     madera_larga = Categoria(
         nombre="Madera Larga",
         estrategia_precio="por_volumen",
         permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
+        min_precio_m3=2000,
     )
     db.add_all([madera_corta, madera_larga])
     db.commit()
