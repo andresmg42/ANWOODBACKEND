@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
+from uuid import uuid4
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
-from sqlalchemy import func
 from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import (
@@ -130,13 +130,7 @@ def _calcular_valores_derivados(
 
 def generate_numero_cotizacion(db: SessionDep) -> str:
     year = datetime.utcnow().year
-    result = db.exec(
-        select(func.count(Cotizacion.id)).where(
-            func.extract("year", Cotizacion.created_at) == year
-        )
-    )
-    count = (result.one() or 0) + 1
-    return f"COT-{year}-{str(count).zfill(4)}"
+    return f"COT-{year}-{uuid4()}"
 
 
 @router.post(

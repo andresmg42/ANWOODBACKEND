@@ -138,13 +138,19 @@ class Cotizacion(SQLModel, table=True):
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
     usuario: Optional["User"] = Relationship(back_populates="cotizaciones")
-    detalles: list["DetalleCotizacion"] = Relationship(back_populates="cotizacion")
+    detalles: list["DetalleCotizacion"] = Relationship(
+        back_populates="cotizacion",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class DetalleCotizacion(SQLModel, table=True):
     __tablename__ = "detalle_cotizacion"
     id: int | None = Field(primary_key=True, default=None)
-    cotizacion_id: int = Field(foreign_key="cotizacion.id")
+    cotizacion_id: int = Field(
+        foreign_key="cotizacion.id",
+        ondelete="CASCADE",
+    )
     pieza_id: int = Field(foreign_key="woodpiece.id")
     descripcion_item: str | None = Field(default=None)
     cantidad: int = Field(default=1)
