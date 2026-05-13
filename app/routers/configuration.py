@@ -126,3 +126,13 @@ async def eliminar_configuracion(config_id: int, db: SessionDep):
     db.delete(config)
     db.commit()
     return Response(status_code=204)
+
+
+def create_configuration_seed(
+    db: SessionDep, clave: str, valor: str, descripcion: str = None
+):
+
+    configuration = Configuration(clave=clave, valor=valor, descripcion=descripcion)
+    db.add(configuration)
+    db.commit()
+    db.refresh(configuration)

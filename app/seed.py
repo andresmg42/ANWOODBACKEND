@@ -1,21 +1,15 @@
-from decimal import Decimal
-
 from sqlmodel import Session, select
-
-from .auth import PermissionsEnum, RoleEnum
-from .auth import assign_permissions_to_role, create_permissions, create_role
-from .models import Categoria, Configuration, LoteInventory, Medida, TipoMadera, WoodPiece
-
-
-def _upsert_configuration(db: Session, clave: str, valor: str, descripcion: str):
-    config = db.exec(select(Configuration).where(Configuration.clave == clave)).first()
-    if config:
-        config.valor = valor
-        config.descripcion = descripcion
-        db.add(config)
-        return
-
-    db.add(Configuration(clave=clave, valor=valor, descripcion=descripcion))
+from .auth import create_permissions, create_role, assign_permissions_to_role
+from .auth import RoleEnum, PermissionsEnum
+from .routers.configuration import create_configuration_seed
+from .models import (
+    Categoria,
+    LoteInventory,
+    Medida,
+    TipoMadera,
+    WoodPiece,
+)
+from decimal import Decimal
 
 
 def seed_data(db: Session):
@@ -34,9 +28,7 @@ def seed_data(db: Session):
             PermissionsEnum.UPDATE_USER,
             PermissionsEnum.VER_INVENTARIO,
             PermissionsEnum.GESTIONAR_INVENTARIO,
-            PermissionsEnum.CREATE_COTIZACION,
-            PermissionsEnum.VIEW_COTIZACION,
-            PermissionsEnum.UPDATE_COTIZACION,
+            PermissionsEnum.DELETE_QUOTATION,
         ],
     )
     assign_permissions_to_role(
@@ -49,39 +41,9 @@ def seed_data(db: Session):
         ],
     )
 
-    _upsert_configuration(
-        db,
-        "precio_epa_por_metro",
-        "1500",
-        "Costo del salvoconducto EPA por metro transportado",
-    )
-    _upsert_configuration(
-        db,
-        "precio_cargue_terrestre_por_metro",
-        "0",
-        "Costo de cargue terrestre por metro",
-    )
-    _upsert_configuration(
-        db,
-        "precio_descargue_terrestre_por_metro",
-        "0",
-        "Costo de descargue terrestre por metro",
-    )
-    _upsert_configuration(
-        db,
-        "precio_cargue_maritimo_por_metro",
-        "0",
-        "Costo de cargue marítimo por metro",
-    )
-    _upsert_configuration(
-        db,
-        "precio_descargue_maritimo_por_metro",
-        "0",
-        "Costo de descargue marítimo por metro",
-    )
-    db.commit()
-
-    categoria = db.exec(select(Categoria).where(Categoria.nombre == "Madera Corta")).first()
+    categoria = db.exec(
+        select(Categoria).where(Categoria.nombre == "Madera Corta")
+    ).first()
     if categoria:
         return
 
@@ -211,7 +173,9 @@ def seed_data(db: Session):
     db.commit()
     db.refresh(lote)
 
-    chaquiro = db.exec(select(TipoMadera).where(TipoMadera.nombre == "Chaquiro")).first()
+    chaquiro = db.exec(
+        select(TipoMadera).where(TipoMadera.nombre == "Chaquiro")
+    ).first()
     popa = db.exec(select(TipoMadera).where(TipoMadera.nombre == "Popa")).first()
     medida_3x6 = db.exec(select(Medida).where(Medida.etiqueta == "3x6")).first()
     medida_2x5 = db.exec(select(Medida).where(Medida.etiqueta == "2x5")).first()
@@ -244,3 +208,37 @@ def seed_data(db: Session):
         db.add_all([pieza1, pieza2])
         db.commit()
 
+    create_configuration_seed(
+        db,
+        "porcentaje_anticipo",
+        20,
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_por_m3",
+        10,
+    )
+
+    create_configuration_seed(
+        db,
+        "dias_vencimiento_cotizacion",
+        10,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_transporte_defecto",
+        500000,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_cargue_defecto",
+        200000,
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_descargue_defecto",
+        200000,
+    )

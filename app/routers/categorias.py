@@ -4,7 +4,8 @@ from sqlmodel import select
 from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import Categoria
-from ..schemas import CategoriaCreate, CategoriaPublic, CategoriaUpdate
+from ..schemas import CategoriaCreate, CategoriaPublic, CategoriaUpdate, CategoriaIn
+from ..auth import require_permission, PermissionsEnum
 
 router = APIRouter(prefix="/categorias", tags=["categorias"])
 
@@ -20,16 +21,18 @@ async def listar_categorias(db: SessionDep):
     status_code=201,
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
-async def crear_categoria(data: CategoriaCreate, db: SessionDep):
-    existente = db.exec(select(Categoria).where(Categoria.nombre == data.nombre)).first()
+async def crear_categoria(data: CategoriaIn, db: SessionDep):
+    existente = db.exec(
+        select(Categoria).where(Categoria.nombre == data.nombre)
+    ).first()
     if existente:
         raise HTTPException(status_code=400, detail="La categoría ya existe")
 
-    categoria = Categoria.model_validate(data)
-    db.add(categoria)
+    nueva_categoria = Categoria(**data.model_dump())
+    db.add(nueva_categoria)
     db.commit()
-    db.refresh(categoria)
-    return categoria
+    db.refresh(nueva_categoria)
+    return nueva_categoria
 
 
 @router.get("/{categoria_id}", response_model=CategoriaPublic)
@@ -45,12 +48,15 @@ async def obtener_categoria(categoria_id: int, db: SessionDep):
     response_model=CategoriaPublic,
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
-async def actualizar_categoria(categoria_id: int, data: CategoriaUpdate, db: SessionDep):
+async def actualizar_categoria(categoria_id: int, data: dict, db: SessionDep):
     db_cat = db.get(Categoria, categoria_id)
     if not db_cat:
         raise HTTPException(404, "Categoría no encontrada")
 
-    db_cat.sqlmodel_update(data.model_dump(exclude_unset=True))
+    cat_data = data  # O usa un esquema de Update si prefieres
+    for key, value in cat_data.items():
+        setattr(db_cat, key, value)
+
     db.add(db_cat)
     db.commit()
     db.refresh(db_cat)

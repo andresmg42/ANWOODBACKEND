@@ -37,13 +37,7 @@ class PermissionsEnum(str, Enum):
     # Inventario
     VER_INVENTARIO = "ver_inventario"
     GESTIONAR_INVENTARIO = "gestionar_inventario"
-    CREATE_COTIZACION = "create_cotizacion"
-    VIEW_COTIZACION = "view_cotizacion"
-    UPDATE_COTIZACION = "update_cotizacion"
-    DELETE_COTIZACION = "delete_cotizacion"
-    APROBAR_COTIZACION = "aprobar_cotizacion"
-
-    
+    DELETE_QUOTATION = "delete_quotation"
 
 
 class RoleEnum(str, Enum):
