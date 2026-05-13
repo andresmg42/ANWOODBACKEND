@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi import APIRouter
-from ..schemas import UserPublic, UserInDB, UserIn, UserPublic, ChangeRole
+from ..schemas import UserPublic, UserInDB, UserIn, UserPublic, ChangeRole, UserUpdate
 from ..auth import (
     get_current_active_user,
     get_password_hash,
@@ -31,7 +31,6 @@ async def create_user(user: UserIn, db: SessionDep):
     db.add(valid_db_user)
     db.commit()
     db.refresh(valid_db_user)
-    assign_role_to_user(valid_db_user, RoleEnum.USER, db)
     return valid_db_user
 
 
@@ -81,6 +80,30 @@ async def delete_user(user_id: int, db: SessionDep):
     db.commit()
     db.refresh(user)
     return {"message": f"user with id {user_id} deleted successfully"}
+
+
+@router.patch(
+    "/users/{user_id}",
+    dependencies=[Depends(require_permission(PermissionsEnum.UPDATE_USER))],
+    response_model=UserPublic,
+)
+async def update_user(user_id: int, payload: UserUpdate, db: SessionDep):
+
+    user = db.get(Userdb, user_id)
+
+    if not user:
+        raise HTTPException(404, "user not found")
+
+    user_data = payload.model_dump(exclude_unset=True)
+    if not user_data:
+        raise HTTPException(status_code=400, detail="No data provided for update")
+    if "password" in user_data:
+        user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+    user.sqlmodel_update(user_data)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.patch(
