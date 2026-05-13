@@ -148,7 +148,7 @@ class CategoriaIn(SQLModel):
     nombre: str
     estrategia_precio: str
     permite_cubicacion: bool
-    min_precio_m3: Decimal
+    min_precio_m3: Decimal | None = None
     max_precio_m3: Decimal | None = None
 
 
@@ -157,7 +157,7 @@ class CategoriaPublic(SQLModel):
     nombre: str
     estrategia_precio: str
     permite_cubicacion: bool
-    min_precio_m3: Decimal
+    min_precio_m3: Decimal | None = None
     max_precio_m3: Decimal | None = None
 
 
