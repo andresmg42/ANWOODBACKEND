@@ -57,6 +57,7 @@ class User(SQLModel, table=True):
     disabled: bool | None = Field(default=False)
     role_id: int | None = Field(foreign_key="role.id", default=None)
     hashed_password: str
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
     role: Optional["Role"] = Relationship(back_populates="users")
     cart: Optional["Cart"] = Relationship(back_populates="user")
     movimientos: list["MovimientoInventario"] = Relationship(back_populates="usuario")
