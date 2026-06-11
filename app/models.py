@@ -182,7 +182,6 @@ class TipoMadera(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     categoria_id: int = Field(foreign_key="categoria.id")
     nombre: str = Field(index=True)
-    densidad_kg_m3: Decimal
     precio_por_metro: Decimal
     descripcion: str | None = None
     activo: bool = Field(default=True)

@@ -116,7 +116,6 @@ class CategoriaPublic(CategoriaBase):
 class TipoMaderaBase(SQLModel):
     categoria_id: int
     nombre: str
-    densidad_kg_m3: Decimal
     precio_por_metro: Decimal
     descripcion: str | None = None
     activo: bool = True
@@ -131,7 +130,6 @@ class TipoMaderaCreate(TipoMaderaBase):
 class TipoMaderaUpdate(SQLModel):
     categoria_id: int | None = None
     nombre: str | None = None
-    densidad_kg_m3: Decimal | None = None
     precio_por_metro: Decimal | None = None
     descripcion: str | None = None
     activo: bool | None = None
@@ -164,7 +162,6 @@ class CategoriaPublic(SQLModel):
 class TipoMaderaPublic(SQLModel):
     id: int
     nombre: str
-    densidad_kg_m3: Decimal
     precio_por_metro: Decimal
     descripcion: str | None = None
     activo: bool

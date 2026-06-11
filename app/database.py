@@ -54,9 +54,26 @@ def _ensure_tipo_madera_imagenes_column():
         connection.execute(text(statement))
 
 
+def _drop_tipo_madera_densidad_column():
+    inspector = inspect(engine)
+
+    if "tipo_madera" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("tipo_madera")}
+    if "densidad_kg_m3" not in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE tipo_madera DROP COLUMN densidad_kg_m3")
+        )
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_tipo_madera_imagenes_column()
+    _drop_tipo_madera_densidad_column()
 
 
 def get_session():

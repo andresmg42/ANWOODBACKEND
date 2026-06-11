@@ -69,67 +69,56 @@ def seed_data(db: Session):
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Chaquiro",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Chanúl",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Carbonero",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Caimito",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Revoltura",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Flor morado",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3500"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Popa",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("2000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Tangare",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("1600"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Algarrobo",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Roble",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Cedro",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
     ]
