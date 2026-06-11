@@ -197,7 +197,6 @@ async def crear_cotizacion(
         user_id=data.user_id,
         numero_cotizacion=numero_cotizacion,
         estado=data.estado or "pendiente",
-        tipo_compra=data.tipo_compra,
         total_m3=total_m3,
         subtotal=subtotal,
         costo_transporte=Decimal(str(costo_transporte)),

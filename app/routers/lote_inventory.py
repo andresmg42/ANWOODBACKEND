@@ -28,7 +28,12 @@ async def crear_lote(data: LoteCreate, db: SessionDep):
         select(LoteInventory).where(LoteInventory.codigo_lote == data.codigo_lote)
     ).first():
         raise HTTPException(400, "El código de lote ya existe")
-    lote = LoteInventory.model_validate(data)
+
+    lote_data = data.model_dump(exclude_unset=True)
+    if lote_data.get("fecha_ingreso") is None:
+        lote_data.pop("fecha_ingreso", None)
+
+    lote = LoteInventory(**lote_data)
     db.add(lote)
     db.commit()
     db.refresh(lote)

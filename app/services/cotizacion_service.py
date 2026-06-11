@@ -38,11 +38,7 @@ def calcular_volumen(
     ancho_in: Decimal | None = None,
     alto_in: Decimal | None = None,
 ) -> Decimal:
-    if not medida.permite_cubicacion:
-        return ZERO
-    if not categoria.permite_cubicacion:
-        return ZERO
-    if not tipo_madera.permite_cubicacion:
+    if not medida.cubica:
         return ZERO
     if (
         categoria.formula_cubicacion

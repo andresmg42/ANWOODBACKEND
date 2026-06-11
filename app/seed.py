@@ -49,14 +49,12 @@ def seed_data(db: Session):
     madera_corta = Categoria(
         nombre="Madera Corta",
         estrategia_precio="por_volumen",
-        permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
         min_precio_m3=1000,
     )
     madera_larga = Categoria(
         nombre="Madera Larga",
         estrategia_precio="por_volumen",
-        permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
         min_precio_m3=2000,
     )
@@ -131,21 +129,21 @@ def seed_data(db: Session):
             alto_in=Decimal("5"),
             etiqueta="2x5",
             es_estandar=True,
-            permite_cubicacion=False,
+            cubica=False,
         ),
         Medida(
             ancho_in=Decimal("3"),
             alto_in=Decimal("6"),
             etiqueta="3x6",
             es_estandar=True,
-            permite_cubicacion=True,
+            cubica=True,
         ),
         Medida(
             ancho_in=Decimal("2"),
             alto_in=Decimal("8"),
             etiqueta="2x8",
             es_estandar=True,
-            permite_cubicacion=True,
+            cubica=True,
         ),
     ]
     db.add_all(medidas)

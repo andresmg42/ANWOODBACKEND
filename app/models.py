@@ -123,7 +123,6 @@ class Cotizacion(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     numero_cotizacion: str = Field(index=True, unique=True)
     estado: str = Field(default="pendiente")
-    tipo_compra: str | None = Field(default=None)
     total_m3: Decimal = Field(default=Decimal("0"))
     subtotal: Decimal = Field(default=Decimal("0"))
     costo_transporte: Decimal = Field(default=Decimal("0"))
@@ -167,7 +166,6 @@ class Categoria(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     nombre: str = Field(index=True)
     estrategia_precio: str
-    permite_cubicacion: bool = Field(default=True)
     formula_cubicacion: str = Field(
         default=FormulaCubicacionEnum.LARGO_X_ALTO_X_ANCHO_DIV_10.value
     )
@@ -185,7 +183,6 @@ class TipoMadera(SQLModel, table=True):
     precio_por_metro: Decimal
     descripcion: str | None = None
     activo: bool = Field(default=True)
-    permite_cubicacion: bool = Field(default=True)
     imagenes: list[str] = Field(
         default_factory=list,
         sa_column=Column(JSON, nullable=False, default=list),
@@ -202,7 +199,7 @@ class Medida(SQLModel, table=True):
     alto_in: Decimal
     etiqueta: str | None = None
     es_estandar: bool = Field(default=True)
-    permite_cubicacion: bool = Field(default=True)
+    cubica: bool = Field(default=True)
     precio_minimo_por_metro: Decimal | None = Field(default=None)
 
     piezas: list["WoodPiece"] = Relationship(back_populates="medida")
@@ -223,7 +220,6 @@ class WoodPiece(SQLModel, table=True):
     calidad: str | None = Field(default=None)
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
-    fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
     tipo_madera: Optional["TipoMadera"] = Relationship(back_populates="piezas")

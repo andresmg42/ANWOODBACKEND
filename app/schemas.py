@@ -94,6 +94,10 @@ class LoteCreate(SQLModel):
     codigo_lote: str
     proveedor: str | None = None
     costo_total: ApiDecimal | None = None
+    fecha_ingreso: datetime | None = Field(
+        default=None,
+        description="Fecha de ingreso del lote. Si se omite, se usa la fecha actual.",
+    )
 
 
 class LotePublic(LoteCreate):
@@ -106,7 +110,6 @@ class LotePublic(LoteCreate):
 class CategoriaBase(SQLModel):
     nombre: str
     estrategia_precio: str
-    permite_cubicacion: bool = True
     formula_cubicacion: str = "largo_x_alto_x_ancho_div_10"
     min_precio_m3: ApiDecimal | None = None
     max_precio_m3: ApiDecimal | None = None
@@ -119,7 +122,6 @@ class CategoriaCreate(CategoriaBase):
 class CategoriaUpdate(SQLModel):
     nombre: str | None = None
     estrategia_precio: str | None = None
-    permite_cubicacion: bool | None = None
     formula_cubicacion: str | None = None
     min_precio_m3: ApiDecimal | None = None
     max_precio_m3: ApiDecimal | None = None
@@ -135,7 +137,6 @@ class TipoMaderaBase(SQLModel):
     precio_por_metro: ApiDecimal
     descripcion: str | None = None
     activo: bool = True
-    permite_cubicacion: bool = True
     imagenes: list[str] = Field(default_factory=list)
 
 
@@ -149,7 +150,6 @@ class TipoMaderaUpdate(SQLModel):
     precio_por_metro: ApiDecimal | None = None
     descripcion: str | None = None
     activo: bool | None = None
-    permite_cubicacion: bool | None = None
     imagenes: list[str] | None = None
 
 
@@ -164,7 +164,6 @@ class TipoMaderaPublic(SQLModel):
     precio_por_metro: ApiDecimal
     descripcion: str | None = None
     activo: bool
-    permite_cubicacion: bool
     imagenes: list[str] = Field(default_factory=list)
     categoria: Optional[CategoriaPublic] = None
 
@@ -174,7 +173,10 @@ class MedidaBase(SQLModel):
     alto_in: ApiDecimal
     etiqueta: str | None = None
     es_estandar: bool = True
-    permite_cubicacion: bool = True
+    cubica: bool = Field(
+        default=True,
+        description="Indica si la medida es cúbica (aplica cálculo por volumen).",
+    )
     precio_minimo_por_metro: ApiDecimal | None = None
 
 
@@ -187,7 +189,7 @@ class MedidaUpdate(SQLModel):
     alto_in: ApiDecimal | None = None
     etiqueta: str | None = None
     es_estandar: bool | None = None
-    permite_cubicacion: bool | None = None
+    cubica: bool | None = None
     precio_minimo_por_metro: ApiDecimal | None = None
 
 
@@ -201,7 +203,7 @@ class MedidaRelacion(SQLModel):
     alto_in: ApiDecimal
     etiqueta: str | None = None
     es_estandar: bool
-    permite_cubicacion: bool
+    cubica: bool
 
 
 class PiezaCreate(SQLModel):
@@ -239,7 +241,7 @@ class PiezaPublic(SQLModel):
     calidad: str | None = None
     precio_unitario: ApiDecimal | None = None
     costo_unitario: ApiDecimal | None = None
-    fecha_ingreso: datetime
+    created_at: datetime
     tipo_madera: Optional[TipoMaderaPublic] = None
     medida: Optional[MedidaPublic] = None
 
@@ -296,7 +298,6 @@ class CotizacionBase(SQLModel):
     user_id: int
     numero_cotizacion: str | None = None
     estado: str | None = None
-    tipo_compra: str | None = None
     costo_transporte: ApiDecimal | None = None
     costo_cargue: ApiDecimal | None = None
     costo_descargue: ApiDecimal | None = None
@@ -309,7 +310,6 @@ class CotizacionCreate(CotizacionBase):
 
 class CotizacionUpdate(SQLModel):
     estado: str | None = None
-    tipo_compra: str | None = None
     costo_transporte: ApiDecimal | None = None
     costo_cargue: ApiDecimal | None = None
     costo_descargue: ApiDecimal | None = None
@@ -325,7 +325,6 @@ class CotizacionPublic(SQLModel):
     user_id: int
     numero_cotizacion: str
     estado: str
-    tipo_compra: str | None = None
     total_m3: ApiDecimal
     subtotal: ApiDecimal
     costo_transporte: ApiDecimal
