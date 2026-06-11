@@ -25,7 +25,12 @@ def _calcular_subtotal(precio_unitario: Decimal, cantidad: int) -> Decimal:
     return Decimal(str(precio_unitario)) * Decimal(str(cantidad))
 
 
-@router.post("", response_model=DetalleCotizacionPublic, status_code=201)
+@router.post(
+    "",
+    response_model=DetalleCotizacionPublic,
+    status_code=201,
+    summary="Crear detalle de cotización",
+)
 async def crear_detalle(data: DetalleCotizacionCreate, db: SessionDep):
     cotizacion = db.get(Cotizacion, data.cotizacion_id)
     if not cotizacion:
@@ -58,12 +63,20 @@ async def crear_detalle(data: DetalleCotizacionCreate, db: SessionDep):
     return detalle
 
 
-@router.get("", response_model=list[DetalleCotizacionPublic])
+@router.get(
+    "",
+    response_model=list[DetalleCotizacionPublic],
+    summary="Listar detalles de cotización",
+)
 async def listar_detalles(db: SessionDep):
     return db.exec(select(DetalleCotizacion)).all()
 
 
-@router.get("/cotizacion/{cotizacion_id}", response_model=list[DetalleCotizacionPublic])
+@router.get(
+    "/cotizacion/{cotizacion_id}",
+    response_model=list[DetalleCotizacionPublic],
+    summary="Listar detalles por cotización",
+)
 async def listar_detalles_por_cotizacion(cotizacion_id: int, db: SessionDep):
     cotizacion = db.get(Cotizacion, cotizacion_id)
     if not cotizacion:
@@ -75,7 +88,11 @@ async def listar_detalles_por_cotizacion(cotizacion_id: int, db: SessionDep):
     return db.exec(query).all()
 
 
-@router.get("/{detalle_id}", response_model=DetalleCotizacionPublic)
+@router.get(
+    "/{detalle_id}",
+    response_model=DetalleCotizacionPublic,
+    summary="Obtener detalle por ID",
+)
 async def obtener_detalle(detalle_id: int, db: SessionDep):
     return _get_detalle_or_404(detalle_id, db)
 
@@ -90,7 +107,11 @@ async def obtener_detalle(detalle_id: int, db: SessionDep):
 #     return db.exec(query).all()
 
 
-@router.patch("/{detalle_id}", response_model=DetalleCotizacionPublic)
+@router.patch(
+    "/{detalle_id}",
+    response_model=DetalleCotizacionPublic,
+    summary="Actualizar detalle de cotización",
+)
 async def actualizar_detalle(
     detalle_id: int,
     data: DetalleCotizacionUpdate,
@@ -116,7 +137,11 @@ async def actualizar_detalle(
     return detalle
 
 
-@router.delete("/{detalle_id}", status_code=204)
+@router.delete(
+    "/{detalle_id}",
+    status_code=204,
+    summary="Eliminar detalle de cotización",
+)
 async def eliminar_detalle(detalle_id: int, db: SessionDep):
     detalle = _get_detalle_or_404(detalle_id, db)
     db.delete(detalle)

@@ -213,6 +213,8 @@ class WoodPiece(SQLModel, table=True):
     tipo_madera_id: int | None = Field(default=None, foreign_key="tipo_madera.id")
     medida_id: int | None = Field(default=None, foreign_key="medida.id")
     lote_id: int | None = Field(default=None, foreign_key="loteinventory.id")
+    ancho_in: Decimal | None = Field(default=None)
+    alto_in: Decimal | None = Field(default=None)
     largo_m: Decimal | None = Field(default=None)
     volumen_m3: Decimal | None = Field(default=None)
     cantidad: int = Field(default=0)

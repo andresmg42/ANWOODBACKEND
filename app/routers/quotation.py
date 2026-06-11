@@ -137,7 +137,7 @@ def generate_numero_cotizacion(db: SessionDep) -> str:
     "",
     response_model=CotizacionPublic,
     status_code=201,
-    # dependencies=[Depends(require_role(RoleEnum.ADMIN))],
+    summary="Crear cotización desde carrito",
 )
 async def crear_cotizacion(
     data: CotizacionCreate,
@@ -223,7 +223,7 @@ async def crear_cotizacion(
 @router.get(
     "",
     response_model=list[CotizacionPublic],
-    # dependencies=[Depends(require_role(RoleEnum.ADMIN))],
+    summary="Listar cotizaciones",
 )
 async def listar_cotizaciones(db: SessionDep):
     return db.exec(select(Cotizacion)).all()
@@ -232,7 +232,7 @@ async def listar_cotizaciones(db: SessionDep):
 @router.get(
     "/{cotizacion_id}",
     response_model=CotizacionPublic,
-    # dependencies=[Depends(require_role(RoleEnum.ADMIN))],
+    summary="Obtener cotización por ID",
 )
 async def obtener_cotizacion(cotizacion_id: int, db: SessionDep):
     cotizacion = db.get(Cotizacion, cotizacion_id)
@@ -244,7 +244,7 @@ async def obtener_cotizacion(cotizacion_id: int, db: SessionDep):
 @router.patch(
     "/{cotizacion_id}",
     response_model=CotizacionPublic,
-    # dependencies=[Depends(require_role(RoleEnum.ADMIN))],
+    summary="Actualizar cotización",
 )
 async def actualizar_cotizacion(
     cotizacion_id: int,
@@ -346,6 +346,7 @@ async def actualizar_cotizacion(
 @router.delete(
     "/{cotizacion_id}",
     status_code=204,
+    summary="Eliminar cotización",
     dependencies=[Depends(require_permission(PermissionsEnum.DELETE_QUOTATION))],
 )
 async def eliminar_cotizacion(cotizacion_id: int, db: SessionDep):

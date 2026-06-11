@@ -9,7 +9,20 @@ from ..schemas import MedidaCreate, MedidaPublic, MedidaUpdate
 router = APIRouter(prefix="/medidas", tags=["medidas"])
 
 
-@router.get("/{medida_id}", response_model=MedidaPublic)
+@router.get(
+    "/",
+    response_model=list[MedidaPublic],
+    summary="Listar medidas",
+)
+async def listar_medidas(db: SessionDep):
+    return db.exec(select(Medida)).all()
+
+
+@router.get(
+    "/{medida_id}",
+    response_model=MedidaPublic,
+    summary="Obtener medida por ID",
+)
 async def obtener_medida(medida_id: int, db: SessionDep):
     medida = db.get(Medida, medida_id)
     if not medida:
@@ -17,14 +30,11 @@ async def obtener_medida(medida_id: int, db: SessionDep):
     return medida
 
 
-@router.get("/", response_model=list[MedidaPublic])
-async def listar_medidas(db: SessionDep):
-    return db.exec(select(Medida)).all()
-
-
 @router.post(
     "/",
     response_model=MedidaPublic,
+    status_code=201,
+    summary="Crear medida",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def crear_medida(data: MedidaCreate, db: SessionDep):
@@ -38,6 +48,7 @@ async def crear_medida(data: MedidaCreate, db: SessionDep):
 @router.patch(
     "/{medida_id}",
     response_model=MedidaPublic,
+    summary="Actualizar medida",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def actualizar_medida(medida_id: int, data: MedidaUpdate, db: SessionDep):
@@ -55,6 +66,7 @@ async def actualizar_medida(medida_id: int, data: MedidaUpdate, db: SessionDep):
 @router.delete(
     "/{medida_id}",
     status_code=204,
+    summary="Eliminar medida",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def eliminar_medida(medida_id: int, db: SessionDep):

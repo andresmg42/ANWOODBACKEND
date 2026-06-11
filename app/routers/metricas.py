@@ -8,13 +8,14 @@ from ..auth import PermissionsEnum, require_permission
 from ..database import SessionDep
 from ..models import (
     Cotizacion,
+    DetalleCotizacion,
     EstadoCotizacionEnum,
+    Role,
     TipoMadera,
     User,
-    Role,
     WoodPiece,
-    DetalleCotizacion,
 )
+from ..schemas import DashboardMetrics
 
 router = APIRouter(prefix="/metricas", tags=["metricas"])
 
@@ -43,6 +44,8 @@ def _next_month(dt: datetime) -> datetime:
 
 @router.get(
     "/dashboard",
+    response_model=DashboardMetrics,
+    summary="Métricas del dashboard",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def dashboard(db: SessionDep):

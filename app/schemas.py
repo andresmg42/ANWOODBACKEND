@@ -7,8 +7,8 @@ from sqlmodel import Field, SQLModel
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str
+    access_token: str = Field(description="JWT para usar en Authorization: Bearer")
+    token_type: str = Field(default="bearer", description="Tipo de token (siempre bearer)")
 
 
 class TokenData(BaseModel):
@@ -48,7 +48,22 @@ class UserInDB(UserBase):
 
 
 class ChangeRole(BaseModel):
-    name: str | None = None
+    name: str | None = Field(
+        default=None,
+        description="Nombre del rol: admin, staff o user.",
+    )
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+class DetailResponse(BaseModel):
+    detail: str
+
+
+class HealthResponse(BaseModel):
+    ok: bool
 
 
 class ItemCartAdd(SQLModel):
@@ -142,23 +157,6 @@ class TipoMaderaRelacion(SQLModel):
     nombre: str
 
 
-class CategoriaIn(SQLModel):
-    nombre: str
-    estrategia_precio: str
-    permite_cubicacion: bool
-    min_precio_m3: Decimal | None = None
-    max_precio_m3: Decimal | None = None
-
-
-class CategoriaPublic(SQLModel):
-    id: int
-    nombre: str
-    estrategia_precio: str
-    permite_cubicacion: bool
-    min_precio_m3: Decimal | None = None
-    max_precio_m3: Decimal | None = None
-
-
 class TipoMaderaPublic(SQLModel):
     id: int
     nombre: str
@@ -209,6 +207,14 @@ class PiezaCreate(SQLModel):
     tipo_madera_id: int
     medida_id: int
     lote_id: int | None = None
+    ancho_in: Decimal | None = Field(
+        default=None,
+        description="Ancho en pulgadas. Si se omite, se copia de la medida.",
+    )
+    alto_in: Decimal | None = Field(
+        default=None,
+        description="Alto en pulgadas. Si se omite, se copia de la medida.",
+    )
     largo_m: Decimal
     costo_unitario: Decimal | None = None
     precio_unitario: Decimal | None = None
@@ -217,6 +223,8 @@ class PiezaCreate(SQLModel):
 
 class PiezaPublic(SQLModel):
     id: int
+    ancho_in: Decimal | None = None
+    alto_in: Decimal | None = None
     largo_m: Decimal | None = None
     volumen_m3: Decimal | None = None
     cantidad: int
@@ -232,6 +240,8 @@ class PiezaPublic(SQLModel):
 
 class PiezaUpdate(SQLModel):
     estado: str | None = None
+    ancho_in: Decimal | None = None
+    alto_in: Decimal | None = None
     largo_m: Decimal | None = None
     precio_unitario: Decimal | None = None
     costo_unitario: Decimal | None = None
@@ -269,6 +279,7 @@ class ConfigurationPublic(ConfigurationBase):
     id: int
     updated_at: datetime
     updated_by_id: int | None = None
+    updated_by_nombre: str | None = None
 
 
 # ─── Cotizacion ─────────
@@ -350,3 +361,42 @@ class DetalleCotizacionUpdate(SQLModel):
 
 class DetalleCotizacionPublic(DetalleCotizacionBase):
     id: int
+
+
+class MesVentas(BaseModel):
+    mes: str
+    ventas: float
+
+
+class MesCotizaciones(BaseModel):
+    mes: str
+    aprobadas: int
+    rechazadas: int
+    pendientes: int
+
+
+class MesClientes(BaseModel):
+    mes: str
+    nuevos: int
+
+
+class TopProducto(BaseModel):
+    nombre: str
+    cotizaciones: int
+
+
+class DashboardMetrics(BaseModel):
+    ventas_mes: float
+    ventas_mes_anterior: float
+    cotizaciones_pendientes: int
+    cotizaciones_aprobadas: int
+    cotizaciones_rechazadas: int
+    productos_total: int
+    productos_stock_bajo: int
+    clientes_total: int
+    clientes_nuevos_mes: int
+    usuarios_activos: int
+    ventas_mensuales: list[MesVentas]
+    cotizaciones_mensuales: list[MesCotizaciones]
+    clientes_mensuales: list[MesClientes]
+    top_productos: list[TopProducto]

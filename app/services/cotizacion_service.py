@@ -31,7 +31,12 @@ def resolver_precio_por_metro(medida: Medida, tipo_madera: TipoMadera) -> Decima
 
 
 def calcular_volumen(
-    medida: Medida, largo_m: Decimal, categoria: Categoria, tipo_madera: TipoMadera
+    medida: Medida,
+    largo_m: Decimal,
+    categoria: Categoria,
+    tipo_madera: TipoMadera,
+    ancho_in: Decimal | None = None,
+    alto_in: Decimal | None = None,
 ) -> Decimal:
     if not medida.permite_cubicacion:
         return ZERO
@@ -45,7 +50,20 @@ def calcular_volumen(
     ):
         return ZERO
 
-    return (_as_decimal(largo_m) * medida.alto_in * medida.ancho_in) / Decimal("10")
+    ancho = _as_decimal(ancho_in if ancho_in is not None else medida.ancho_in)
+    alto = _as_decimal(alto_in if alto_in is not None else medida.alto_in)
+    return (_as_decimal(largo_m) * alto * ancho) / Decimal("10")
+
+
+def resolver_dimensiones_pieza(
+    medida: Medida,
+    ancho_in: Decimal | None = None,
+    alto_in: Decimal | None = None,
+) -> tuple[Decimal, Decimal]:
+    return (
+        _as_decimal(ancho_in if ancho_in is not None else medida.ancho_in),
+        _as_decimal(alto_in if alto_in is not None else medida.alto_in),
+    )
 
 
 def calcular_detalle(detalle, medida: Medida, tipo_madera: TipoMadera, categoria: Categoria):

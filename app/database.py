@@ -70,10 +70,33 @@ def _drop_tipo_madera_densidad_column():
         )
 
 
+def _ensure_woodpiece_dimension_columns():
+    inspector = inspect(engine)
+
+    if "woodpiece" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("woodpiece")}
+    statements = []
+
+    if "ancho_in" not in columns:
+        statements.append("ALTER TABLE woodpiece ADD COLUMN ancho_in NUMERIC")
+    if "alto_in" not in columns:
+        statements.append("ALTER TABLE woodpiece ADD COLUMN alto_in NUMERIC")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_tipo_madera_imagenes_column()
     _drop_tipo_madera_densidad_column()
+    _ensure_woodpiece_dimension_columns()
 
 
 def get_session():

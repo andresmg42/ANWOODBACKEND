@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+
 def test_list_categorias_from_seed(client):
     response = client.get("/categorias/")
 
@@ -64,3 +67,61 @@ def test_list_piezas_from_seed(client):
     piezas = response.json()
     assert len(piezas) >= 2
     assert all("cantidad" in pieza for pieza in piezas)
+    assert all("ancho_in" in pieza for pieza in piezas)
+    assert all("alto_in" in pieza for pieza in piezas)
+
+
+def test_create_pieza_uses_medida_dimensions_by_default(client, admin_headers):
+    medidas_response = client.get("/medidas/")
+    medida = next(m for m in medidas_response.json() if m["etiqueta"] == "3x6")
+    tipos_response = client.get("/wood-types/")
+    tipo = next(t for t in tipos_response.json() if t["nombre"] == "Chaquiro")
+    lotes_response = client.get("/lotes", headers=admin_headers)
+    lote_id = lotes_response.json()[0]["id"]
+
+    response = client.post(
+        "/piezas",
+        headers=admin_headers,
+        json={
+            "tipo_madera_id": tipo["id"],
+            "medida_id": medida["id"],
+            "lote_id": lote_id,
+            "largo_m": "4",
+            "cantidad": 5,
+            "costo_unitario": "1000",
+            "precio_unitario": "1500",
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert Decimal(data["ancho_in"]) == Decimal(medida["ancho_in"])
+    assert Decimal(data["alto_in"]) == Decimal(medida["alto_in"])
+
+
+def test_create_pieza_with_custom_dimensions(client, admin_headers):
+    medidas_response = client.get("/medidas/")
+    medida = next(m for m in medidas_response.json() if m["etiqueta"] == "3x6")
+    tipos_response = client.get("/wood-types/")
+    tipo = next(t for t in tipos_response.json() if t["nombre"] == "Chaquiro")
+    lotes_response = client.get("/lotes", headers=admin_headers)
+    lote_id = lotes_response.json()[0]["id"]
+
+    response = client.post(
+        "/piezas",
+        headers=admin_headers,
+        json={
+            "tipo_madera_id": tipo["id"],
+            "medida_id": medida["id"],
+            "lote_id": lote_id,
+            "ancho_in": "4",
+            "alto_in": "7",
+            "largo_m": "4",
+            "cantidad": 2,
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert Decimal(data["ancho_in"]) == Decimal("4")
+    assert Decimal(data["alto_in"]) == Decimal("7")
