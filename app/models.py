@@ -220,6 +220,7 @@ class WoodPiece(SQLModel, table=True):
     cantidad: int = Field(default=0)
     cantidad_reservada: int = Field(default=0)
     estado: str | None = Field(default="disponible")
+    calidad: str | None = Field(default=None)
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
     fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)

@@ -92,11 +92,26 @@ def _ensure_woodpiece_dimension_columns():
             connection.execute(text(statement))
 
 
+def _ensure_woodpiece_calidad_column():
+    inspector = inspect(engine)
+
+    if "woodpiece" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("woodpiece")}
+    if "calidad" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE woodpiece ADD COLUMN calidad VARCHAR"))
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_tipo_madera_imagenes_column()
     _drop_tipo_madera_densidad_column()
     _ensure_woodpiece_dimension_columns()
+    _ensure_woodpiece_calidad_column()
 
 
 def get_session():

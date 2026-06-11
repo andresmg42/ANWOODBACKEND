@@ -182,6 +182,7 @@ def seed_data(db: Session):
             cantidad=20,
             cantidad_reservada=0,
             estado="disponible",
+            calidad="primera",
             costo_unitario=Decimal("40000"),
             precio_unitario=Decimal("57600"),
         )
@@ -196,6 +197,7 @@ def seed_data(db: Session):
             cantidad=10,
             cantidad_reservada=0,
             estado="disponible",
+            calidad="segunda",
             costo_unitario=Decimal("7000"),
             precio_unitario=Decimal("10000"),
         )
