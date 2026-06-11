@@ -90,21 +90,53 @@ class ItemCartUpdate(SQLModel):
     cantidad: int
 
 
+class ProveedorCreate(SQLModel):
+    nombre: str
+    telefono: str | None = None
+    activo: bool = True
+    user_id: int | None = Field(
+        default=None,
+        description="Usuario asociado para login opcional.",
+    )
+
+
+class ProveedorUpdate(SQLModel):
+    nombre: str | None = None
+    telefono: str | None = None
+    activo: bool | None = None
+    user_id: int | None = None
+
+
+class ProveedorPublic(SQLModel):
+    id: int
+    nombre: str
+    telefono: str | None = None
+    activo: bool
+    user_id: int | None = None
+    created_at: datetime
+
+
 class LoteCreate(SQLModel):
     codigo_lote: str
-    proveedor: str | None = None
     costo_total: ApiDecimal | None = None
     fecha_ingreso: datetime | None = Field(
         default=None,
         description="Fecha de ingreso del lote. Si se omite, se usa la fecha actual.",
     )
+    proveedor_ids: list[int] = Field(
+        default_factory=list,
+        description="IDs de proveedores asociados al lote.",
+    )
 
 
-class LotePublic(LoteCreate):
+class LotePublic(SQLModel):
     id: int
-    estado: str
+    codigo_lote: str
+    costo_total: ApiDecimal | None = None
     fecha_ingreso: datetime
+    estado: str
     created_at: datetime
+    proveedores: list[ProveedorPublic] = Field(default_factory=list)
 
 
 class CategoriaBase(SQLModel):

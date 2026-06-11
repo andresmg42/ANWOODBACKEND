@@ -1,12 +1,12 @@
-from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from typing import Annotated
-from ..auth import require_permission, PermissionsEnum, get_current_active_user
+
+from ..auth import PermissionsEnum, get_current_active_user, require_permission
 from ..database import SessionDep
-from ..models import LoteInventory, MovimientoInventario, User
+from ..models import LoteInventory, MovimientoInventario, Proveedor, User
 from ..schemas import (
-    DetailResponse,
     LoteCreate,
     LotePublic,
     MessageResponse,
@@ -14,6 +14,32 @@ from ..schemas import (
 )
 
 router = APIRouter(tags=["inventory"])
+
+
+def _lote_query():
+    return select(LoteInventory).options(selectinload(LoteInventory.proveedores))
+
+
+def _get_lote_or_404(lote_id: int, db: SessionDep) -> LoteInventory:
+    lote = db.exec(_lote_query().where(LoteInventory.id == lote_id)).unique().first()
+    if not lote:
+        raise HTTPException(404, "Lote no encontrado")
+    return lote
+
+
+def _asociar_proveedores(
+    lote: LoteInventory, proveedor_ids: list[int], db: SessionDep
+) -> None:
+    if not proveedor_ids:
+        return
+
+    proveedores = db.exec(
+        select(Proveedor).where(Proveedor.id.in_(proveedor_ids))
+    ).all()
+    if len(proveedores) != len(set(proveedor_ids)):
+        raise HTTPException(400, "Uno o más proveedores no existen")
+
+    lote.proveedores = proveedores
 
 
 @router.post(
@@ -29,15 +55,17 @@ async def crear_lote(data: LoteCreate, db: SessionDep):
     ).first():
         raise HTTPException(400, "El código de lote ya existe")
 
-    lote_data = data.model_dump(exclude_unset=True)
+    lote_data = data.model_dump(exclude_unset=True, exclude={"proveedor_ids"})
     if lote_data.get("fecha_ingreso") is None:
         lote_data.pop("fecha_ingreso", None)
 
     lote = LoteInventory(**lote_data)
     db.add(lote)
+    db.flush()
+    _asociar_proveedores(lote, data.proveedor_ids, db)
     db.commit()
-    db.refresh(lote)
-    return lote
+
+    return _get_lote_or_404(lote.id, db)
 
 
 @router.get(
@@ -47,7 +75,8 @@ async def crear_lote(data: LoteCreate, db: SessionDep):
     dependencies=[Depends(require_permission(PermissionsEnum.VER_INVENTARIO))],
 )
 async def listar_lotes(db: SessionDep, estado: str = "activo"):
-    return db.exec(select(LoteInventory).where(LoteInventory.estado == estado)).all()
+    query = _lote_query().where(LoteInventory.estado == estado)
+    return db.exec(query).unique().all()
 
 
 @router.get(
@@ -57,10 +86,7 @@ async def listar_lotes(db: SessionDep, estado: str = "activo"):
     dependencies=[Depends(require_permission(PermissionsEnum.VER_INVENTARIO))],
 )
 async def get_lote(lote_id: int, db: SessionDep):
-    lote = db.get(LoteInventory, lote_id)
-    if not lote:
-        raise HTTPException(404, "Lote no encontrado")
-    return lote
+    return _get_lote_or_404(lote_id, db)
 
 
 @router.delete(

@@ -173,6 +173,22 @@ def _drop_cotizacion_tipo_compra_column():
         )
 
 
+def _drop_loteinventory_proveedor_column():
+    inspector = inspect(engine)
+
+    if "loteinventory" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("loteinventory")}
+    if "proveedor" not in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE loteinventory DROP COLUMN proveedor")
+        )
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_tipo_madera_imagenes_column()
@@ -182,6 +198,7 @@ def create_db_and_tables():
     _drop_woodpiece_fecha_ingreso_column()
     _migrate_cubicacion_fields()
     _drop_cotizacion_tipo_compra_column()
+    _drop_loteinventory_proveedor_column()
 
 
 def get_session():

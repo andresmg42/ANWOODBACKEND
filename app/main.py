@@ -16,6 +16,7 @@ from .routers import (
     configuration,
     quotation,
     metricas,
+    proveedores,
 )
 from .schemas import HealthResponse
 
@@ -51,6 +52,7 @@ app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(cart.router)
 app.include_router(lote_inventory.router)
+app.include_router(proveedores.router)
 app.include_router(pieza_madera.router)
 app.include_router(tipos_madera.router)
 app.include_router(medidas.router)

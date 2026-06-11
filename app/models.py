@@ -65,6 +65,29 @@ class User(SQLModel, table=True):
         back_populates="updated_by"
     )
     cotizaciones: list["Cotizacion"] = Relationship(back_populates="usuario")
+    proveedor: Optional["Proveedor"] = Relationship(back_populates="user")
+
+
+class ProveedorLote(SQLModel, table=True):
+    __tablename__ = "proveedor_lote"
+    proveedor_id: int = Field(primary_key=True, foreign_key="proveedor.id")
+    lote_id: int = Field(primary_key=True, foreign_key="loteinventory.id")
+
+
+class Proveedor(SQLModel, table=True):
+    __tablename__ = "proveedor"
+    id: int | None = Field(primary_key=True, default=None)
+    nombre: str
+    telefono: str | None = Field(default=None)
+    activo: bool = Field(default=True)
+    user_id: int | None = Field(default=None, foreign_key="user.id", unique=True)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    user: Optional["User"] = Relationship(back_populates="proveedor")
+    lotes: list["LoteInventory"] = Relationship(
+        back_populates="proveedores",
+        link_model=ProveedorLote,
+    )
 
 
 class Configuration(SQLModel, table=True):
@@ -93,12 +116,15 @@ class Cart(SQLModel, table=True):
 class LoteInventory(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     codigo_lote: str | None = Field(default=None, unique=True, index=True)
-    proveedor: str | None = Field(default=None)
     fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
     costo_total: Decimal | None = Field(default=None)
     estado: str | None = Field(default="activo")
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
+    proveedores: list["Proveedor"] = Relationship(
+        back_populates="lotes",
+        link_model=ProveedorLote,
+    )
 
 
 # class Client(SQLModel, table=True):

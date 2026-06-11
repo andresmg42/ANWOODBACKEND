@@ -6,6 +6,7 @@ from .models import (
     Categoria,
     LoteInventory,
     Medida,
+    Proveedor,
     TipoMadera,
     WoodPiece,
 )
@@ -153,11 +154,19 @@ def seed_data(db: Session):
 
     lote = LoteInventory(
         codigo_lote="LOTE-001",
-        proveedor="Proveedor Semilla",
         costo_total=Decimal("100000"),
         estado="activo",
     )
-    db.add(lote)
+    proveedor_semilla = Proveedor(
+        nombre="Proveedor Semilla",
+        telefono="3000000000",
+        activo=True,
+    )
+    db.add_all([lote, proveedor_semilla])
+    db.commit()
+    db.refresh(lote)
+    db.refresh(proveedor_semilla)
+    lote.proveedores.append(proveedor_semilla)
     db.commit()
     db.refresh(lote)
 

@@ -14,6 +14,7 @@ OPENAPI_TAGS = [
     {"name": "health", "description": "Estado del servicio."},
     {"name": "cart", "description": "Carrito del usuario autenticado."},
     {"name": "inventory", "description": "Lotes y movimientos de inventario."},
+    {"name": "proveedores", "description": "Proveedores de madera."},
     {"name": "pieza_madera", "description": "Piezas de madera en inventario."},
     {"name": "categorias", "description": "Categorías de producto."},
     {"name": "wood-types", "description": "Tipos de madera."},
