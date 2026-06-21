@@ -7,6 +7,9 @@ from google.genai.types import GenerateContentConfig
 import time
 from ..schemas import ResponseLLM
 from ..database import engine
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 SQL_MODEL = "gemini-3.1-flash-lite"
@@ -194,6 +197,7 @@ async def send_with_retry(chat, prompt: str, config=None, retries=2):
                 print(f"Rate limit, esperando {wait}s... intento {i+1}")
                 await asyncio.sleep(wait)
             else:
+                logger.error(f"LLM call failed: {type(e).__name__}: {e}", exc_info=True)
                 raise e
     raise Exception("Máximo de reintentos alcanzado")
 
@@ -202,6 +206,7 @@ def query(sql_query: str):
     with engine.connect() as connection:
         result = connection.execute(text(sql_query))
         rows = result.fetchall()
+        logger.info(f"Query returned {len(rows)} rows")
         return [dict(row._mapping) for row in rows]
 
 
@@ -222,11 +227,11 @@ async def human_query_to_sql(
         response_mime_type="application/json",
         response_schema=ResponseLLM,
     )
-    
+
     response = await send_with_retry(chat, prompt, config=config)
-    print("LLM response:", response)
     llm_response = ResponseLLM.model_validate_json(response)
-    print("SQL model response:", llm_response.model_dump())
+    logger.info(f"Generated SQL: {llm_response.sql_query}")
+    
 
     return llm_response.model_dump()
 
@@ -266,15 +271,16 @@ async def _run_query(
     try:
         sql_query = await human_query_to_sql(human_query, session_id)
         result = query(sql_query["sql_query"])
-    except Exception:
+    except Exception as e:
+        logger.error(f"Pipeline error: {type(e).__name__}: {e}", exc_info=True)
         result = []
 
     print(result)
     try:
         answer = await build_answer(result, human_query, session_id)
-    
+
     except Exception as e:
-        print(f'error:{str(e)}')
+        logger.error(f"Pipeline error: {type(e).__name__}: {e}", exc_info=True)
         answer= "En este momento no puedo responder, por favor intentalo mas tarde"
 
     return {"answer": answer}

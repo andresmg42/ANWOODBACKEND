@@ -8,7 +8,15 @@ import logging
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,  # ← change to DEBUG for more detail
+    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    # Optional: write to file
+    # handlers=[
+    #     logging.StreamHandler(),                        # console
+    #     logging.FileHandler("logs/chatbot.log"),        # file
+    # ]
+)
 
 router = APIRouter(prefix="/chatbot", tags=["chatbot"])
 
