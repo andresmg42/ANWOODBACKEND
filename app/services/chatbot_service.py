@@ -1,19 +1,21 @@
-import os
 import asyncio
 from typing import Any
+import os
 from google import genai
+from dotenv import load_dotenv
 from sqlalchemy import text, inspect
 from google.genai.types import GenerateContentConfig
 import time
 from ..schemas import ResponseLLM
 from ..database import engine
 import logging
-
 logger = logging.getLogger(__name__)
+load_dotenv()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 
 
-SQL_MODEL = "gemini-3.1-flash-lite"
-ANSWER_MODEL = "gemini-3.1-flash-lite"
+SQL_MODEL = GEMINI_MODEL
+ANSWER_MODEL = GEMINI_MODEL
 SESSION_TTL_SECONDS = 60 * 30
 EXAMPLE = ResponseLLM(
     sql_query="SELECT * FROM zone_zone WHERE campus='Melendez'"
@@ -30,7 +32,7 @@ INTERNAL_TABLES = {
 
 session_store: dict[str, dict] = {}
 
-BUSINESS_POLICIES_PATH=os.path.join(os.path.dirname(__file__),"..","..","policies.txt")
+BUSINESS_POLICIES_PATH = os.path.join(os.path.dirname(__file__), "..", "policies.txt")
 
 CLIENT = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 INSPECTOR = inspect(engine)
