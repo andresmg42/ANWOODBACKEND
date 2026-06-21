@@ -9,8 +9,8 @@ from ..schemas import ResponseLLM
 from ..database import engine
 
 
-SQL_MODEL = "gemini-3.5-flash"
-ANSWER_MODEL = "gemini-3.5-flash"
+SQL_MODEL = "gemini-3.1-flash-lite"
+ANSWER_MODEL = "gemini-3.1-flash-lite"
 SESSION_TTL_SECONDS = 60 * 30
 EXAMPLE = ResponseLLM(
     sql_query="SELECT * FROM zone_zone WHERE campus='Melendez'"
@@ -270,8 +270,11 @@ async def _run_query(
         result = []
 
     print(result)
-    answer = await build_answer(result, human_query, session_id)
-    if not answer:
-        return {"error": "Falló la generación de la respuesta"}
+    try:
+        answer = await build_answer(result, human_query, session_id)
+    
+    except Exception as e:
+        print(f'error:{str(e)}')
+        answer= "En este momento no puedo responder, por favor intentalo mas tarde"
 
     return {"answer": answer}
