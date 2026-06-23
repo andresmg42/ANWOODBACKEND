@@ -353,3 +353,14 @@ class DetalleCotizacionUpdate(SQLModel):
 
 class DetalleCotizacionPublic(DetalleCotizacionBase):
     id: int
+
+# ------------ CHATBOT--------------------------------------------
+
+
+class ResponseLLM(BaseModel):
+    sql_query: str = Field(description="sql query in SQL sintax")
+
+
+class PostHumanQueryPayload(BaseModel):
+    human_query: str
+    session_id: str | None = None

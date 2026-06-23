@@ -13,7 +13,10 @@ from .routers import (
     medidas,
     categorias,
     configuration,
-    quotation, metricas
+    quotation,
+    metricas,
+    chatbot,
+    assistant,
 )
 
 
@@ -50,6 +53,8 @@ app.include_router(configuration.router)
 app.include_router(quotation.router)
 app.include_router(quotation_detail.router)
 app.include_router(metricas.router)
+app.include_router(chatbot.router)
+app.include_router(assistant.router)
 
 
 # Health check

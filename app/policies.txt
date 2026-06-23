@@ -1,0 +1,31 @@
+# Políticas Comerciales - Maderas y Piezas
+
+## Precios y Descuentos
+- Los precios unitarios están expresados en pesos colombianos (COP).
+- Descuentos mayores al 15% requieren aprobación del gerente comercial.
+- Clientes con más de 12 meses de antigüedad tienen derecho a un descuento base del 5%.
+- No se aplican descuentos sobre productos con estado 'reservado'.
+
+## Inventario y Disponibilidad
+- Solo se pueden vender piezas con estado 'disponible'.
+- Piezas con estado 'reservado' están comprometidas con otro cliente y no pueden ofrecerse.
+- El volumen mínimo de venta por pedido es de 0.5 m³.
+- La cantidad mínima por tipo de madera es de 5 unidades por pedido.
+
+## Lotes y Trazabilidad
+- Todo pedido debe estar asociado a un código de lote (codigo_lote).
+- No se mezclan piezas de diferentes lotes en un mismo pedido sin autorización.
+
+## Tipos de Madera
+- Las maderas de tipo 'Popa' y 'Cedro' son consideradas maderas finas y tienen restricción de exportación.
+- Las maderas de tipo 'Pino' son de uso estándar y no tienen restricciones especiales.
+
+## Pagos y Facturación
+- El plazo de pago estándar es de 30 días para clientes registrados.
+- Clientes nuevos deben cancelar el 50% de anticipo antes del despacho.
+- Se aceptan pagos en efectivo, transferencia bancaria y cheque certificado.
+
+## Despacho y Entrega
+- El tiempo de alistamiento estándar es de 2 días hábiles.
+- Pedidos mayores a 10 m³ requieren coordinación previa con el área de logística.
+- El flete no está incluido en el precio unitario y se cotiza por separado.
