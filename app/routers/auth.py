@@ -1,18 +1,25 @@
 from datetime import timedelta
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from ..schemas import Token
-from ..auth import authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token
-from fastapi import APIRouter
+
+from ..auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token
 from ..database import SessionDep
+from ..schemas import Token
 
-router = APIRouter()
+router = APIRouter(tags=["auth"])
 
 
-@router.post("/token")
+@router.post(
+    "/token",
+    response_model=Token,
+    summary="Iniciar sesión",
+    description="Devuelve un token JWT. Enviar `username` y `password` como form-urlencoded.",
+)
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: SessionDep
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: SessionDep,
 ) -> Token:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:

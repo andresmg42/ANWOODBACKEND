@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables, SessionDep
 from .create_admin_user import init_db_and_admin 
 from contextlib import asynccontextmanager
+from .openapi import API_DESCRIPTION, API_TITLE, API_VERSION, OPENAPI_TAGS
 from .routers import (
     auth,
     quotation_detail,
@@ -16,9 +17,11 @@ from .routers import (
     configuration,
     quotation,
     metricas,
+    proveedores,
     chatbot,
     assistant,
 )
+from .schemas import HealthResponse
 
 
 @asynccontextmanager
@@ -34,7 +37,13 @@ async def lifespan(_app: FastAPI):
     
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title=API_TITLE,
+    description=API_DESCRIPTION,
+    version=API_VERSION,
+    openapi_tags=OPENAPI_TAGS,
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,7 +51,7 @@ app.add_middleware(
         "http://localhost:5173",
         "https://anwoodfrontend.vercel.app",
         "https://angwood.vercel.app",
-        "http://localhost:3000"
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -53,6 +62,7 @@ app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(cart.router)
 app.include_router(lote_inventory.router)
+app.include_router(proveedores.router)
 app.include_router(pieza_madera.router)
 app.include_router(tipos_madera.router)
 app.include_router(medidas.router)
@@ -65,7 +75,11 @@ app.include_router(chatbot.router)
 app.include_router(assistant.router)
 
 
-# Health check
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["health"],
+    summary="Comprobar estado del servicio",
+    response_model=HealthResponse,
+)
 def health_check(_session: SessionDep):
     return {"ok": True}

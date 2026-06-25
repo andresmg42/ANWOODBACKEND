@@ -16,10 +16,25 @@ from ..schemas import (
 router = APIRouter(prefix="/configuracion", tags=["configuracion"])
 
 
+def _to_configuration_public(
+    config: Configuration, updated_by_nombre: str | None = None
+) -> ConfigurationPublic:
+    return ConfigurationPublic(
+        id=config.id,
+        clave=config.clave,
+        valor=config.valor,
+        descripcion=config.descripcion,
+        updated_at=config.updated_at,
+        updated_by_id=config.updated_by_id,
+        updated_by_nombre=updated_by_nombre,
+    )
+
+
 @router.post(
     "/",
     response_model=ConfigurationPublic,
     status_code=201,
+    summary="Crear configuración",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def crear_configuracion(
@@ -40,43 +55,46 @@ async def crear_configuracion(
     db.add(config)
     db.commit()
     db.refresh(config)
-    c_dict = config.model_dump()
-    c_dict["updated_by_nombre"] = current_user.full_name
-    return c_dict
+    return _to_configuration_public(config, current_user.full_name)
 
 
 @router.get(
     "/",
     response_model=list[ConfigurationPublic],
+    summary="Listar configuraciones",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def listar_configuracion(db: SessionDep):
     configs = db.exec(select(Configuration)).all()
-    results = []
-    for c in configs:
-        c_dict = c.model_dump()
-        c_dict["updated_by_nombre"] = c.updated_by.full_name if c.updated_by else None
-        results.append(c_dict)
-    return results
+    return [
+        _to_configuration_public(
+            config,
+            config.updated_by.full_name if config.updated_by else None,
+        )
+        for config in configs
+    ]
 
 
 @router.get(
     "/{config_id}",
     response_model=ConfigurationPublic,
+    summary="Obtener configuración por ID",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def obtener_configuracion(config_id: int, db: SessionDep):
     config = db.get(Configuration, config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Configuracion no encontrada")
-    c_dict = config.model_dump()
-    c_dict["updated_by_nombre"] = config.updated_by.full_name if config.updated_by else None
-    return c_dict
+    return _to_configuration_public(
+        config,
+        config.updated_by.full_name if config.updated_by else None,
+    )
 
 
 @router.patch(
     "/{config_id}",
     response_model=ConfigurationPublic,
+    summary="Actualizar configuración",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def actualizar_configuracion(
@@ -108,15 +126,13 @@ async def actualizar_configuracion(
     db.add(config)
     db.commit()
     db.refresh(config)
-    
-    c_dict = config.model_dump()
-    c_dict["updated_by_nombre"] = current_user.full_name
-    return c_dict
+    return _to_configuration_public(config, current_user.full_name)
 
 
 @router.delete(
     "/{config_id}",
     status_code=204,
+    summary="Eliminar configuración",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 async def eliminar_configuracion(config_id: int, db: SessionDep):
@@ -131,7 +147,6 @@ async def eliminar_configuracion(config_id: int, db: SessionDep):
 def create_configuration_seed(
     db: SessionDep, clave: str, valor: str, descripcion: str = None
 ):
-
     configuration = Configuration(clave=clave, valor=valor, descripcion=descripcion)
     db.add(configuration)
     db.commit()

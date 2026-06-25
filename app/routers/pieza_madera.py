@@ -6,12 +6,8 @@ from typing import Annotated
 from ..auth import require_permission, PermissionsEnum, get_current_active_user
 from ..database import SessionDep
 from ..models import Medida, MovimientoInventario, TipoMadera, User, WoodPiece
-from ..schemas import (
-    PiezaCreate,
-    PiezaPublic,
-    PiezaUpdate,
-)
-from ..services.cotizacion_service import calcular_volumen
+from ..schemas import MessageResponse, PiezaCreate, PiezaPublic, PiezaUpdate
+from ..services.cotizacion_service import calcular_volumen, resolver_dimensiones_pieza
 
 router = APIRouter(tags=["pieza_madera"])
 
@@ -20,6 +16,7 @@ router = APIRouter(tags=["pieza_madera"])
     "/piezas",
     response_model=PiezaPublic,
     status_code=201,
+    summary="Crear pieza de madera",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def crear_pieza(
@@ -43,9 +40,17 @@ async def crear_pieza(
     if not categoria:
         raise HTTPException(400, "El tipo de madera no tiene categoría asociada")
 
-    volumen = calcular_volumen(medida, data.largo_m, categoria, tipo_madera)
+    ancho_in, alto_in = resolver_dimensiones_pieza(
+        medida, data.ancho_in, data.alto_in
+    )
+    volumen = calcular_volumen(
+        medida, data.largo_m, categoria, tipo_madera, ancho_in, alto_in
+    )
 
-    pieza = WoodPiece(**data.model_dump(), volumen_m3=volumen)
+    pieza_data = data.model_dump()
+    pieza_data["ancho_in"] = ancho_in
+    pieza_data["alto_in"] = alto_in
+    pieza = WoodPiece(**pieza_data, volumen_m3=volumen)
     db.add(pieza)
     db.flush()
 
@@ -66,7 +71,11 @@ async def crear_pieza(
     return db.exec(query).unique().first()
 
 
-@router.get("/piezas", response_model=list[PiezaPublic])
+@router.get(
+    "/piezas",
+    response_model=list[PiezaPublic],
+    summary="Listar piezas de madera",
+)
 async def listar_piezas(
     db: SessionDep,
     estado: str | None = None,
@@ -85,7 +94,11 @@ async def listar_piezas(
     return db.exec(q.offset(offset).limit(limit)).unique().all()
 
 
-@router.get("/piezas/{pieza_id}", response_model=PiezaPublic)
+@router.get(
+    "/piezas/{pieza_id}",
+    response_model=PiezaPublic,
+    summary="Obtener pieza por ID",
+)
 async def get_pieza(pieza_id: int, db: SessionDep):
     query = (
         select(WoodPiece)
@@ -103,6 +116,7 @@ async def get_pieza(pieza_id: int, db: SessionDep):
 @router.patch(
     "/piezas/{pieza_id}",
     response_model=PiezaPublic,
+    summary="Actualizar pieza",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
@@ -111,7 +125,8 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
         raise HTTPException(404, "Pieza no encontrada")
 
     update_data = data.model_dump(exclude_unset=True)
-    if "largo_m" in update_data:
+    dimension_fields = {"largo_m", "ancho_in", "alto_in"}
+    if dimension_fields & update_data.keys():
         medida = db.get(Medida, p.medida_id)
         tipo_query = (
             select(TipoMadera)
@@ -121,8 +136,22 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
         tipo_madera = db.exec(tipo_query).first()
         if not medida or not tipo_madera or not tipo_madera.categoria:
             raise HTTPException(400, "No fue posible recalcular el volumen de la pieza")
+
+        largo_m = update_data.get("largo_m", p.largo_m)
+        ancho_in, alto_in = resolver_dimensiones_pieza(
+            medida,
+            update_data.get("ancho_in", p.ancho_in),
+            update_data.get("alto_in", p.alto_in),
+        )
+        update_data["ancho_in"] = ancho_in
+        update_data["alto_in"] = alto_in
         update_data["volumen_m3"] = calcular_volumen(
-            medida, update_data["largo_m"], tipo_madera.categoria, tipo_madera
+            medida,
+            largo_m,
+            tipo_madera.categoria,
+            tipo_madera,
+            ancho_in,
+            alto_in,
         )
 
     p.sqlmodel_update(update_data)
@@ -138,6 +167,8 @@ async def actualizar_pieza(pieza_id: int, data: PiezaUpdate, db: SessionDep):
 
 @router.delete(
     "/piezas/{pieza_id}",
+    response_model=MessageResponse,
+    summary="Desactivar pieza",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def eliminar_pieza(pieza_id: int, db: SessionDep):
