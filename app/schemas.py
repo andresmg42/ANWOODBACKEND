@@ -438,3 +438,13 @@ class DashboardMetrics(BaseModel):
     cotizaciones_mensuales: list[MesCotizaciones]
     clientes_mensuales: list[MesClientes]
     top_productos: list[TopProducto]
+# ------------ CHATBOT--------------------------------------------
+
+
+class ResponseLLM(BaseModel):
+    sql_query: str = Field(description="sql query in SQL sintax")
+
+
+class PostHumanQueryPayload(BaseModel):
+    human_query: str
+    session_id: str | None = None

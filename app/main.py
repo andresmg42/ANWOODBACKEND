@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables, SessionDep
+from .create_admin_user import init_db_and_admin 
 from contextlib import asynccontextmanager
 from .openapi import API_DESCRIPTION, API_TITLE, API_VERSION, OPENAPI_TAGS
 from .routers import (
@@ -17,14 +18,23 @@ from .routers import (
     quotation,
     metricas,
     proveedores,
+    chatbot,
+    assistant,
 )
 from .schemas import HealthResponse
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    create_db_and_tables()
+    print("Ejecutando script de creación de administrador y migraciones...")
+    try:
+        init_db_and_admin()  
+        print("Script ejecutado con éxito.")
+    except Exception as e:
+        print(f"Error al crear el admin: {e}")
+
     yield
+    
 
 
 app = FastAPI(
@@ -61,6 +71,8 @@ app.include_router(configuration.router)
 app.include_router(quotation.router)
 app.include_router(quotation_detail.router)
 app.include_router(metricas.router)
+app.include_router(chatbot.router)
+app.include_router(assistant.router)
 
 
 @app.get(

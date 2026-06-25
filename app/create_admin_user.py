@@ -40,9 +40,14 @@ def create_super_user(db: Session):
     assign_role_to_user(user, RoleEnum.ADMIN, db)
 
 
-if __name__ == "__main__":
+# 👇 NUEVA FUNCIÓN CONTENEDORA
+def init_db_and_admin():
     with Session(engine) as db:
-        create_db_and_tables()
-        seed_data(db)
-        create_super_user(db)
-        print("super user created succesfully")
+        create_db_and_tables()  # Crea tablas si no existen
+        seed_data(db)  # Agrega datos semilla
+        create_super_user(db)  # Crea al admin
+        print("Database initialized and super user verified/created successfully.")
+
+
+if __name__ == "__main__":
+    init_db_and_admin()

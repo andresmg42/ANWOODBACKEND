@@ -1,0 +1,130 @@
+from typing import Any
+
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+import os
+
+from .assistant_executor import AssistantExecutor
+from .assistant_tools import (
+    FUNCTION_DECLARATIONS,
+    FUNCTION_TO_CAPABILITY,
+    SYSTEM_PROMPT,
+)
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+
+MAX_FUNCTION_TURNS = 5
+
+
+class GeminiService:
+    def __init__(self):
+        if not GEMINI_API_KEY:
+            raise ValueError(
+                "GEMINI_API_KEY no está configurada en el entorno"
+            )
+        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        self.tools = types.Tool(function_declarations=FUNCTION_DECLARATIONS)
+        self.config = types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            tools=[self.tools],
+        )
+
+    def _build_contents(
+        self,
+        message: str,
+        history: list[dict[str, str]],
+        session_context: str | None = None,
+    ) -> list[types.Content]:
+        contents: list[types.Content] = []
+        for entry in history:
+            role = "user" if entry["role"] == "user" else "model"
+            contents.append(
+                types.Content(role=role, parts=[types.Part(text=entry["content"])])
+            )
+        user_message = message
+        if session_context:
+            user_message = f"{session_context}\n\n{message}"
+        contents.append(
+            types.Content(role="user", parts=[types.Part(text=user_message)])
+        )
+        return contents
+
+    def _extract_function_call(self, candidate) -> types.FunctionCall | None:
+        if not candidate or not candidate.content or not candidate.content.parts:
+            return None
+        for part in candidate.content.parts:
+            if part.function_call:
+                return part.function_call
+        return None
+
+    def _build_function_response_part(
+        self,
+        name: str,
+        result: dict[str, Any],
+        call_id: str | None = None,
+    ) -> types.Part:
+        fn_kwargs: dict[str, Any] = {"name": name, "response": result}
+        if call_id:
+            fn_kwargs["id"] = call_id
+        return types.Part(function_response=types.FunctionResponse(**fn_kwargs))
+
+    def chat(
+        self,
+        message: str,
+        history: list[dict[str, str]],
+        executor: AssistantExecutor,
+        session_context: str | None = None,
+    ) -> dict[str, Any]:
+        contents = self._build_contents(message, history, session_context)
+        intent: str | None = None
+        capability: str | None = None
+        last_response = None
+
+        for _ in range(MAX_FUNCTION_TURNS):
+            response = self.client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=contents,
+                config=self.config,
+            )
+            last_response = response
+            candidate = response.candidates[0] if response.candidates else None
+            fc = self._extract_function_call(candidate)
+
+            if not fc:
+                break
+
+            intent = fc.name
+            capability = FUNCTION_TO_CAPABILITY.get(fc.name)
+            args = dict(fc.args) if fc.args else {}
+            result = executor.execute(fc.name, args)
+
+            contents.append(candidate.content)
+            fn_response = self._build_function_response_part(
+                name=fc.name,
+                result=result,
+                call_id=getattr(fc, "id", None),
+            )
+            contents.append(types.Content(role="user", parts=[fn_response]))
+
+        reply = (
+            (last_response.text if last_response else None)
+            or "Lo siento, no pude procesar tu consulta."
+        )
+        return {
+            "reply": reply.strip(),
+            "intent": intent,
+            "capability": capability,
+        }
+
+
+_gemini_service: GeminiService | None = None
+
+
+def get_gemini_service() -> GeminiService:
+    global _gemini_service
+    if _gemini_service is None:
+        _gemini_service = GeminiService()
+    return _gemini_service
