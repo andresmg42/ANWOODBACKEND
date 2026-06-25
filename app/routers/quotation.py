@@ -14,6 +14,11 @@ from ..models import (
     WoodPiece,
 )
 from ..schemas import CotizacionCreate, CotizacionPublic, CotizacionUpdate
+from ..services.cotizacion_costos import (
+    calcular_salvoconducto,
+    get_costos_defecto_por_via,
+    normalizar_via_transporte,
+)
 
 router = APIRouter(prefix="/cotizaciones", tags=["cotizaciones"])
 
@@ -44,6 +49,13 @@ def _get_config_int(
         return int(Decimal(str(config.valor)))
     except Exception:
         raise HTTPException(400, f"Invalid configuracion value for {key}")
+
+
+def _parse_via_transporte(via: str | None) -> str:
+    try:
+        return normalizar_via_transporte(via)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 def _get_cart_items_for_user(db: SessionDep, user_id: int) -> list[ItemCart]:
@@ -149,37 +161,31 @@ async def crear_cotizacion(
     if existente:
         raise HTTPException(400, "El numero de cotizacion ya existe")
 
+    via_transporte = _parse_via_transporte(data.via_transporte)
     items = _get_cart_items_for_user(db, data.user_id)
     total_m3, subtotal = _calcular_totales_desde_carrito(db, items)
 
     porcentaje_anticipo = _get_config_decimal(db, "porcentaje_anticipo")
-    tasa_salvoconducto = _get_config_decimal(db, "tasa_salvoconducto_por_m3")
     dias_vencimiento = _get_config_int(db, "dias_vencimiento_cotizacion")
-    costo_transporte_default = _get_config_decimal(
-        db, "costo_transporte_defecto", required=False, default=Decimal("0")
-    )
-    costo_cargue_default = _get_config_decimal(
-        db, "costo_cargue_defecto", required=False, default=Decimal("0")
-    )
-    costo_descargue_default = _get_config_decimal(
-        db, "costo_descargue_defecto", required=False, default=Decimal("0")
-    )
+    costos_defecto = get_costos_defecto_por_via(db, via_transporte)
 
     costo_transporte = (
         data.costo_transporte
         if data.costo_transporte is not None
-        else costo_transporte_default
+        else costos_defecto["costo_transporte"]
     )
     costo_cargue = (
-        data.costo_cargue if data.costo_cargue is not None else costo_cargue_default
+        data.costo_cargue
+        if data.costo_cargue is not None
+        else costos_defecto["costo_cargue"]
     )
     costo_descargue = (
         data.costo_descargue
         if data.costo_descargue is not None
-        else costo_descargue_default
+        else costos_defecto["costo_descargue"]
     )
 
-    costo_salvoconducto = total_m3 * tasa_salvoconducto
+    costo_salvoconducto = calcular_salvoconducto(db, total_m3, via_transporte)
     valor_anticipo, total_monto = _calcular_valores_derivados(
         total_m3=total_m3,
         subtotal=subtotal,
@@ -197,6 +203,7 @@ async def crear_cotizacion(
         user_id=data.user_id,
         numero_cotizacion=numero_cotizacion,
         estado=data.estado or "pendiente",
+        via_transporte=via_transporte,
         total_m3=total_m3,
         subtotal=subtotal,
         costo_transporte=Decimal(str(costo_transporte)),
@@ -256,28 +263,27 @@ async def actualizar_cotizacion(
 
     update_data = data.model_dump(exclude_unset=True)
     recalcular = update_data.pop("recalcular", False)
+    campos_actualizados = set(update_data.keys())
+
+    if "via_transporte" in update_data:
+        cotizacion.via_transporte = _parse_via_transporte(
+            update_data.pop("via_transporte")
+        )
 
     if recalcular:
         items = _get_cart_items_for_user(db, cotizacion.user_id)
         total_m3, subtotal = _calcular_totales_desde_carrito(db, items)
 
         porcentaje_anticipo = _get_config_decimal(db, "porcentaje_anticipo")
-        tasa_salvoconducto = _get_config_decimal(db, "tasa_salvoconducto_por_m3")
         dias_vencimiento = _get_config_int(db, "dias_vencimiento_cotizacion")
-        costo_transporte_default = _get_config_decimal(
-            db, "costo_transporte_defecto", required=False, default=Decimal("0")
-        )
-        costo_cargue_default = _get_config_decimal(
-            db, "costo_cargue_defecto", required=False, default=Decimal("0")
-        )
-        costo_descargue_default = _get_config_decimal(
-            db, "costo_descargue_defecto", required=False, default=Decimal("0")
-        )
+        costos_defecto = get_costos_defecto_por_via(db, cotizacion.via_transporte)
 
-        costo_transporte = costo_transporte_default
-        costo_cargue = costo_cargue_default
-        costo_descargue = costo_descargue_default
-        costo_salvoconducto = total_m3 * tasa_salvoconducto
+        costo_transporte = costos_defecto["costo_transporte"]
+        costo_cargue = costos_defecto["costo_cargue"]
+        costo_descargue = costos_defecto["costo_descargue"]
+        costo_salvoconducto = calcular_salvoconducto(
+            db, total_m3, cotizacion.via_transporte
+        )
 
         valor_anticipo, total_monto = _calcular_valores_derivados(
             total_m3=total_m3,
@@ -304,7 +310,7 @@ async def actualizar_cotizacion(
         cotizacion.fecha_vencimiento = fecha_vencimiento
         cotizacion.salvoconducto_es_manual = False
     else:
-        if not update_data:
+        if not update_data and "via_transporte" not in campos_actualizados:
             raise HTTPException(status_code=400, detail="No data provided for update")
 
         if "salvoconducto_es_manual" in update_data:

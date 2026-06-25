@@ -330,6 +330,7 @@ class CotizacionBase(SQLModel):
     user_id: int
     numero_cotizacion: str | None = None
     estado: str | None = None
+    via_transporte: str = "tierra"
     costo_transporte: ApiDecimal | None = None
     costo_cargue: ApiDecimal | None = None
     costo_descargue: ApiDecimal | None = None
@@ -342,6 +343,7 @@ class CotizacionCreate(CotizacionBase):
 
 class CotizacionUpdate(SQLModel):
     estado: str | None = None
+    via_transporte: str | None = None
     costo_transporte: ApiDecimal | None = None
     costo_cargue: ApiDecimal | None = None
     costo_descargue: ApiDecimal | None = None
@@ -357,6 +359,7 @@ class CotizacionPublic(SQLModel):
     user_id: int
     numero_cotizacion: str
     estado: str
+    via_transporte: str
     total_m3: ApiDecimal
     subtotal: ApiDecimal
     costo_transporte: ApiDecimal

@@ -84,9 +84,13 @@ FUNCTION_DECLARATIONS = [
         "parameters": {
             "type": "object",
             "properties": {
-                "tipo_compra": {
+                "via_transporte": {
                     "type": "string",
-                    "description": "Tipo de compra (ej. retail, proyecto).",
+                    "description": (
+                        "Vía de transporte para calcular costos: 'tierra' o 'mar'. "
+                        "Default: tierra."
+                    ),
+                    "enum": ["tierra", "mar"],
                 },
             },
         },

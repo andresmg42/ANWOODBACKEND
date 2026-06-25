@@ -57,10 +57,36 @@ def get_company_info(db: Session, tema: str | None = None) -> dict[str, Any]:
         "politicas_comerciales": {
             "porcentaje_anticipo": config_map.get("porcentaje_anticipo"),
             "dias_vencimiento_cotizacion": config_map.get("dias_vencimiento_cotizacion"),
-            "tasa_salvoconducto_por_m3": config_map.get("tasa_salvoconducto_por_m3"),
-            "costo_transporte_defecto": config_map.get("costo_transporte_defecto"),
-            "costo_cargue_defecto": config_map.get("costo_cargue_defecto"),
-            "costo_descargue_defecto": config_map.get("costo_descargue_defecto"),
+            "costos_por_via": {
+                "tierra": {
+                    "costo_transporte_defecto": config_map.get(
+                        "costo_transporte_tierra_defecto"
+                    ),
+                    "costo_cargue_defecto": config_map.get(
+                        "costo_cargue_tierra_defecto"
+                    ),
+                    "costo_descargue_defecto": config_map.get(
+                        "costo_descargue_tierra_defecto"
+                    ),
+                    "tasa_salvoconducto_por_m3": config_map.get(
+                        "tasa_salvoconducto_tierra_por_m3"
+                    ),
+                },
+                "mar": {
+                    "costo_transporte_defecto": config_map.get(
+                        "costo_transporte_mar_defecto"
+                    ),
+                    "costo_cargue_defecto": config_map.get(
+                        "costo_cargue_mar_defecto"
+                    ),
+                    "costo_descargue_defecto": config_map.get(
+                        "costo_descargue_mar_defecto"
+                    ),
+                    "tasa_salvoconducto_por_m3": config_map.get(
+                        "tasa_salvoconducto_mar_por_m3"
+                    ),
+                },
+            },
         },
     }
     if policies:

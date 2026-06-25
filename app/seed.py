@@ -219,29 +219,82 @@ def seed_data(db: Session):
     create_configuration_seed(
         db,
         "tasa_salvoconducto_por_m3",
-        10,
+        "10",
+        "Tasa EPA/salvoconducto por m³ (legacy, usar tasas por vía)",
     )
 
     create_configuration_seed(
         db,
         "dias_vencimiento_cotizacion",
-        10,
+        "10",
     )
 
     create_configuration_seed(
         db,
         "costo_transporte_defecto",
-        500000,
+        "500000",
+        "Costo de transporte por defecto (legacy, usar costos por vía)",
     )
 
     create_configuration_seed(
         db,
         "costo_cargue_defecto",
-        200000,
+        "200000",
+        "Costo de cargue por defecto (legacy, usar costos por vía)",
     )
 
     create_configuration_seed(
         db,
         "costo_descargue_defecto",
-        200000,
+        "200000",
+        "Costo de descargue por defecto (legacy, usar costos por vía)",
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_transporte_tierra_defecto",
+        "500000",
+        "Costo de transporte por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_transporte_mar_defecto",
+        "500000",
+        "Costo de transporte por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "costo_cargue_tierra_defecto",
+        "200000",
+        "Costo de cargue por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_cargue_mar_defecto",
+        "200000",
+        "Costo de cargue por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "costo_descargue_tierra_defecto",
+        "200000",
+        "Costo de descargue por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_descargue_mar_defecto",
+        "200000",
+        "Costo de descargue por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_tierra_por_m3",
+        "10",
+        "Tasa EPA/salvoconducto por m³ vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_mar_por_m3",
+        "10",
+        "Tasa EPA/salvoconducto por m³ vía marítima",
     )

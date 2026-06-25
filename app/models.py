@@ -18,6 +18,11 @@ class EstadoCotizacionEnum(str, Enum):
     CANCELADA = "cancelada"
 
 
+class ViaTransporteEnum(str, Enum):
+    TIERRA = "tierra"
+    MAR = "mar"
+
+
 class ReglaCalculoEnum(str, Enum):
     CUBICACION = "cubicacion"
     POR_LARGO = "por_largo"
@@ -149,6 +154,7 @@ class Cotizacion(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     numero_cotizacion: str = Field(index=True, unique=True)
     estado: str = Field(default="pendiente")
+    via_transporte: str = Field(default=ViaTransporteEnum.TIERRA.value)
     total_m3: Decimal = Field(default=Decimal("0"))
     subtotal: Decimal = Field(default=Decimal("0"))
     costo_transporte: Decimal = Field(default=Decimal("0"))
