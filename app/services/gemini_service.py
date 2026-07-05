@@ -1,10 +1,10 @@
 from typing import Any
-
+from fastapi import UploadFile
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 import os
-
+import asyncio
 from .assistant_executor import AssistantExecutor
 from .assistant_tools import (
     FUNCTION_DECLARATIONS,
@@ -32,13 +32,15 @@ class GeminiService:
             tools=[self.tools],
         )
 
-    def _build_contents(
+    async def _build_contents(
         self,
         message: str,
         history: list[dict[str, str]],
+        image: UploadFile | None = None,
         session_context: str | None = None,
     ) -> list[types.Content]:
         contents: list[types.Content] = []
+
         for entry in history:
             role = "user" if entry["role"] == "user" else "model"
             contents.append(
@@ -47,9 +49,22 @@ class GeminiService:
         user_message = message
         if session_context:
             user_message = f"{session_context}\n\n{message}"
+
+        image_part:types.Part | None = None
+        if image is not None:
+            image_bytes= await image.read()
+
+            if len(image_bytes)>0:
+                mime_type= image.content_type or "image/jpeg"
+                image_part= types.Part.from_bytes(data=image_bytes,mime_type=mime_type)
+
+        parts: list[types.Part]=[types.Part(text=user_message)]
+        if image_part is not None:
+            parts.append(image_part)
+
         contents.append(
-            types.Content(role="user", parts=[types.Part(text=user_message)])
-        )
+                types.Content(role="user", parts=[types.Part(text=user_message),image_part])
+            )
         return contents
 
     def _extract_function_call(self, candidate) -> types.FunctionCall | None:
@@ -71,23 +86,26 @@ class GeminiService:
             fn_kwargs["id"] = call_id
         return types.Part(function_response=types.FunctionResponse(**fn_kwargs))
 
-    def chat(
+    async def chat(
         self,
         message: str,
         history: list[dict[str, str]],
         executor: AssistantExecutor,
+        image: UploadFile | None = None,
         session_context: str | None = None,
     ) -> dict[str, Any]:
-        contents = self._build_contents(message, history, session_context)
+        contents = await self._build_contents(message, history,image,session_context)
         intent: str | None = None
         capability: str | None = None
         last_response = None
 
         for _ in range(MAX_FUNCTION_TURNS):
-            response = self.client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=contents,
-                config=self.config,
+            response = await asyncio.to_thread(
+                self.client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=contents,
+                    config=self.config,
+                )
             )
             last_response = response
             candidate = response.candidates[0] if response.candidates else None
