@@ -68,3 +68,5 @@ def get_config_decimal(db: Session, key: str, default: Decimal = Decimal("0")) -
 
 def get_config_int(db: Session, key: str, default: int = 0) -> int:
     return int(get_config_decimal(db, key, Decimal(str(default))))
+
+

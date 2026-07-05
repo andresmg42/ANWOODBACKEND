@@ -1,4 +1,5 @@
 from typing import Any
+import uuid
 from fastapi import UploadFile
 from google import genai
 from google.genai import types
@@ -17,6 +18,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 
 MAX_FUNCTION_TURNS = 5
+
+
+_session_histories: dict[str, list[dict[str, str]]] = {}
 
 
 class GeminiService:
@@ -46,6 +50,7 @@ class GeminiService:
             contents.append(
                 types.Content(role=role, parts=[types.Part(text=entry["content"])])
             )
+
         user_message = message
         if session_context:
             user_message = f"{session_context}\n\n{message}"
@@ -58,14 +63,33 @@ class GeminiService:
                 mime_type= image.content_type or "image/jpeg"
                 image_part= types.Part.from_bytes(data=image_bytes,mime_type=mime_type)
 
-        parts: list[types.Part]=[types.Part(text=user_message)]
+                
+
+        parts: list[types.Part] = [types.Part(text=user_message)]
         if image_part is not None:
             parts.append(image_part)
 
-        contents.append(
-                types.Content(role="user", parts=[types.Part(text=user_message),image_part])
-            )
+        contents.append(types.Content(role="user", parts=parts))
         return contents
+
+    def get_session_history(self, session_id: str) -> list[dict[str, str]]:
+        return list(_session_histories.get(session_id, []))
+
+    def save_session_history(
+        self,
+        session_id: str,
+        history: list[dict[str, str]],
+        assistant_reply: str,
+        user_message: str,
+    ) -> None:
+        _session_histories[session_id] = [
+            *history,
+            {"role": "user", "content": user_message},
+            {"role": "assistant", "content": assistant_reply},
+        ]
+
+    def clear_session(self, session_id: str) -> None:
+        _session_histories.pop(session_id, None)
 
     def _extract_function_call(self, candidate) -> types.FunctionCall | None:
         if not candidate or not candidate.content or not candidate.content.parts:
@@ -93,19 +117,29 @@ class GeminiService:
         executor: AssistantExecutor,
         image: UploadFile | None = None,
         session_context: str | None = None,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
-        contents = await self._build_contents(message, history,image,session_context)
+        active_session_id = session_id or str(uuid.uuid4())
+        session_history = self.get_session_history(active_session_id)
+        effective_history = history if history else session_history
+        contents = await self._build_contents(
+            
+            message,
+            effective_history,
+            image,
+            session_context,
+        )
+
         intent: str | None = None
         capability: str | None = None
         last_response = None
 
         for _ in range(MAX_FUNCTION_TURNS):
             response = await asyncio.to_thread(
-                self.client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=contents,
-                    config=self.config,
-                )
+                self.client.models.generate_content,
+                model=GEMINI_MODEL,
+                contents=contents,
+                config=self.config,
             )
             last_response = response
             candidate = response.candidates[0] if response.candidates else None
@@ -131,10 +165,17 @@ class GeminiService:
             (last_response.text if last_response else None)
             or "Lo siento, no pude procesar tu consulta."
         )
+        self.save_session_history(
+            active_session_id,
+            effective_history,
+            reply.strip(),
+            message,
+        )
         return {
             "reply": reply.strip(),
             "intent": intent,
             "capability": capability,
+            "session_id": active_session_id,
         }
 
 

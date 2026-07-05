@@ -1,4 +1,5 @@
-from typing import Annotated, Literal,Optional
+from typing import Annotated, Literal, Optional
+import uuid
 from pydantic import ValidationError
 import jwt
 from fastapi import APIRouter, Header, HTTPException,UploadFile,File, Form
@@ -31,6 +32,7 @@ class AssistantChatResponse(BaseModel):
     reply: str
     intent: str | None = None
     capability: str | None = None
+    session_id: str
 
 
 def _get_user_from_token(authorization: str | None, db: SessionDep) -> User | None:
@@ -66,6 +68,7 @@ async def assistant_chat(
     db: SessionDep,
     message: str = Form(..., min_length=1, max_length=2000),
     history: str = Form(default="[]"),
+    session_id: str | None = Form(default=None),
     image: Optional[UploadFile] = File(default=None),
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ):
@@ -94,6 +97,7 @@ async def assistant_chat(
     user = _get_user_from_token(authorization, db)
     executor = AssistantExecutor(db, user_id=user.id if user else None)
     chat_history = [{"role": m.role, "content": m.content} for m in validated_history]
+    active_session_id = session_id or str(uuid.uuid4())
 
     try:
         result = await  service.chat(
@@ -102,6 +106,7 @@ async def assistant_chat(
             executor,
             image,
             session_context=_session_context(user),
+            session_id=active_session_id,
             
         )
     except Exception as exc:
@@ -114,4 +119,12 @@ async def assistant_chat(
         reply=result["reply"],
         intent=result["intent"],
         capability=result.get("capability"),
+        session_id=result["session_id"],
     )
+
+
+@router.delete("/session/{session_id}")
+async def delete_assistant_session(session_id: str):
+    service = get_gemini_service()
+    service.clear_session(session_id)
+    return {"message": f"Assistant session {session_id} cleared", "session_id": session_id}
