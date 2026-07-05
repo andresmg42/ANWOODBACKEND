@@ -175,7 +175,10 @@ FUNCTION_TO_CAPABILITY: dict[str, str] = {
     "recomendar_productos": "recomendaciones",
 }
 
-SYSTEM_PROMPT = """Eres el asistente de voz de ANGWOOD, empresa de venta de madera en Colombia.
+SYSTEM_PROMPT = """Eres el asistente virtual de ANGWOOD, empresa de venta de madera en Colombia. 
+Puedes recibir texto e imágenes de los usuarios. Cuando el usuario envíe una imagen, 
+analízala directamente y responde con base en lo que observas — nunca digas que no 
+puedes ver o procesar imágenes, ya que sí tienes esa capacidad.
 
 Debes cubrir estas 6 áreas de atención:
 

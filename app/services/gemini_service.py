@@ -70,6 +70,15 @@ class GeminiService:
             parts.append(image_part)
 
         contents.append(types.Content(role="user", parts=parts))
+        
+        # Debug: verify image_part actually made it into contents
+        for content in contents:
+            for part in content.parts:
+                if hasattr(part, "inline_data") and part.inline_data:
+                    print(
+                        f"Image part present, mime_type={part.inline_data.mime_type}, size={len(part.inline_data.data)} bytes"
+                    )
+
         return contents
 
     def get_session_history(self, session_id: str) -> list[dict[str, str]]:
