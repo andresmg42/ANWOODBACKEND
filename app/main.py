@@ -20,6 +20,7 @@ from .routers import (
     proveedores,
     chatbot,
     assistant,
+    pagos,
 )
 from .schemas import HealthResponse
 
@@ -73,6 +74,7 @@ app.include_router(quotation_detail.router)
 app.include_router(metricas.router)
 app.include_router(chatbot.router)
 app.include_router(assistant.router)
+app.include_router(pagos.router, prefix="/pagos", tags=["Pagos"])
 
 
 @app.get(

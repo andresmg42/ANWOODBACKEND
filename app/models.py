@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, Numeric
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -71,6 +71,7 @@ class User(SQLModel, table=True):
     )
     cotizaciones: list["Cotizacion"] = Relationship(back_populates="usuario")
     proveedor: Optional["Proveedor"] = Relationship(back_populates="user")
+    pagos: list["Pago"] = Relationship(back_populates="user")
 
 
 class ProveedorLote(SQLModel, table=True):
@@ -289,3 +290,16 @@ class MovimientoInventario(SQLModel, table=True):
 
     pieza: Optional["WoodPiece"] = Relationship(back_populates="movimientos")
     usuario: Optional["User"] = Relationship(back_populates="movimientos")
+
+
+class Pago(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    preference_id: str
+    mp_payment_id: str | None = Field(default=None)
+    status: str = Field(default="pending")
+    monto_total: Decimal = Field(sa_column=Column(Numeric(12, 2)))
+    items_json: list | dict = Field(default_factory=list, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime | None = Field(default=None)
+    user: Optional["User"] = Relationship(back_populates="pagos")
