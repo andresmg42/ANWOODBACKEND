@@ -451,3 +451,45 @@ class ResponseLLM(BaseModel):
 class PostHumanQueryPayload(BaseModel):
     human_query: str
     session_id: str | None = None
+
+
+# ------------ PAGOS (Mercado Pago) --------------------------------------------
+
+
+class PagoItemCreate(SQLModel):
+    pieza_id: Optional[int] = None
+    titulo: str
+    cantidad: int
+    precio_unitario: ApiDecimal
+
+
+class PagoPayerCreate(SQLModel):
+    name: str
+    email: str
+
+
+class PagoCreate(SQLModel):
+    items: list[PagoItemCreate]
+    payer: PagoPayerCreate
+
+
+class PreferenciaResponse(SQLModel):
+    preference_id: str
+    init_point: str
+    sandbox_init_point: str
+    payment_url: str
+
+
+class PagoPublic(SQLModel):
+    payment_id: int
+    preference_id: str
+    status: str
+    monto_total: ApiDecimal
+    created_at: datetime
+    mp_payment_id: str | None = None
+
+
+class PagoPublicWithUser(PagoPublic):
+    user_id: int
+    username: str | None = None
+    email: str | None = None

@@ -23,4 +23,5 @@ OPENAPI_TAGS = [
     {"name": "cotizaciones", "description": "Cotizaciones."},
     {"name": "detalle_cotizacion", "description": "Líneas de detalle de cotizaciones."},
     {"name": "metricas", "description": "Métricas del dashboard."},
+    {"name": "Pagos", "description": "Pagos con Mercado Pago Checkout Pro."},
 ]
