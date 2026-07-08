@@ -6,6 +6,7 @@ from .models import (
     Categoria,
     LoteInventory,
     Medida,
+    Proveedor,
     TipoMadera,
     WoodPiece,
 )
@@ -49,14 +50,12 @@ def seed_data(db: Session):
     madera_corta = Categoria(
         nombre="Madera Corta",
         estrategia_precio="por_volumen",
-        permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
         min_precio_m3=1000,
     )
     madera_larga = Categoria(
         nombre="Madera Larga",
         estrategia_precio="por_volumen",
-        permite_cubicacion=True,
         formula_cubicacion="largo_x_alto_x_ancho_div_10",
         min_precio_m3=2000,
     )
@@ -69,67 +68,56 @@ def seed_data(db: Session):
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Chaquiro",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Chanúl",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Carbonero",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Caimito",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_corta.id,
             nombre="Revoltura",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("8000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Flor morado",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3500"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Popa",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("2000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Tangare",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("1600"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Algarrobo",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Roble",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
         TipoMadera(
             categoria_id=madera_larga.id,
             nombre="Cedro",
-            densidad_kg_m3=Decimal("0"),
             precio_por_metro=Decimal("3000"),
         ),
     ]
@@ -142,21 +130,21 @@ def seed_data(db: Session):
             alto_in=Decimal("5"),
             etiqueta="2x5",
             es_estandar=True,
-            permite_cubicacion=False,
+            cubica=False,
         ),
         Medida(
             ancho_in=Decimal("3"),
             alto_in=Decimal("6"),
             etiqueta="3x6",
             es_estandar=True,
-            permite_cubicacion=True,
+            cubica=True,
         ),
         Medida(
             ancho_in=Decimal("2"),
             alto_in=Decimal("8"),
             etiqueta="2x8",
             es_estandar=True,
-            permite_cubicacion=True,
+            cubica=True,
         ),
     ]
     db.add_all(medidas)
@@ -166,11 +154,19 @@ def seed_data(db: Session):
 
     lote = LoteInventory(
         codigo_lote="LOTE-001",
-        proveedor="Proveedor Semilla",
         costo_total=Decimal("100000"),
         estado="activo",
     )
-    db.add(lote)
+    proveedor_semilla = Proveedor(
+        nombre="Proveedor Semilla",
+        telefono="3000000000",
+        activo=True,
+    )
+    db.add_all([lote, proveedor_semilla])
+    db.commit()
+    db.refresh(lote)
+    db.refresh(proveedor_semilla)
+    lote.proveedores.append(proveedor_semilla)
     db.commit()
     db.refresh(lote)
 
@@ -186,11 +182,14 @@ def seed_data(db: Session):
             tipo_madera_id=chaquiro.id,
             medida_id=medida_3x6.id,
             lote_id=lote.id,
+            ancho_in=medida_3x6.ancho_in,
+            alto_in=medida_3x6.alto_in,
             largo_m=Decimal("4"),
             volumen_m3=Decimal("7.2"),
             cantidad=20,
             cantidad_reservada=0,
             estado="disponible",
+            calidad="primera",
             costo_unitario=Decimal("40000"),
             precio_unitario=Decimal("57600"),
         )
@@ -198,11 +197,14 @@ def seed_data(db: Session):
             tipo_madera_id=popa.id,
             medida_id=medida_2x5.id,
             lote_id=lote.id,
+            ancho_in=medida_2x5.ancho_in,
+            alto_in=medida_2x5.alto_in,
             largo_m=Decimal("5"),
             volumen_m3=Decimal("0"),
             cantidad=10,
             cantidad_reservada=0,
             estado="disponible",
+            calidad="segunda",
             costo_unitario=Decimal("7000"),
             precio_unitario=Decimal("10000"),
         )
@@ -217,29 +219,82 @@ def seed_data(db: Session):
     create_configuration_seed(
         db,
         "tasa_salvoconducto_por_m3",
-        10,
+        "10",
+        "Tasa EPA/salvoconducto por m³ (legacy, usar tasas por vía)",
     )
 
     create_configuration_seed(
         db,
         "dias_vencimiento_cotizacion",
-        10,
+        "10",
     )
 
     create_configuration_seed(
         db,
         "costo_transporte_defecto",
-        500000,
+        "500000",
+        "Costo de transporte por defecto (legacy, usar costos por vía)",
     )
 
     create_configuration_seed(
         db,
         "costo_cargue_defecto",
-        200000,
+        "200000",
+        "Costo de cargue por defecto (legacy, usar costos por vía)",
     )
 
     create_configuration_seed(
         db,
         "costo_descargue_defecto",
-        200000,
+        "200000",
+        "Costo de descargue por defecto (legacy, usar costos por vía)",
+    )
+
+    create_configuration_seed(
+        db,
+        "costo_transporte_tierra_defecto",
+        "500000",
+        "Costo de transporte por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_transporte_mar_defecto",
+        "500000",
+        "Costo de transporte por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "costo_cargue_tierra_defecto",
+        "200000",
+        "Costo de cargue por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_cargue_mar_defecto",
+        "200000",
+        "Costo de cargue por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "costo_descargue_tierra_defecto",
+        "200000",
+        "Costo de descargue por defecto vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "costo_descargue_mar_defecto",
+        "200000",
+        "Costo de descargue por defecto vía marítima",
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_tierra_por_m3",
+        "10",
+        "Tasa EPA/salvoconducto por m³ vía terrestre",
+    )
+    create_configuration_seed(
+        db,
+        "tasa_salvoconducto_mar_por_m3",
+        "10",
+        "Tasa EPA/salvoconducto por m³ vía marítima",
     )

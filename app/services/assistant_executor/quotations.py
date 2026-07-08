@@ -6,6 +6,11 @@ from uuid import uuid4
 from sqlmodel import select
 
 from ...models import Cart, Cotizacion, DetalleCotizacion, ItemCart, WoodPiece
+from ..cotizacion_costos import (
+    calcular_salvoconducto,
+    get_costos_defecto_por_via,
+    normalizar_via_transporte,
+)
 from ._base import ExecutorBase
 from ._helpers import decimal_to_float, get_config_decimal, get_config_int
 
@@ -35,6 +40,7 @@ class QuotationHandler(ExecutorBase):
                     "id": c.id,
                     "numero_cotizacion": c.numero_cotizacion,
                     "estado": c.estado,
+                    "via_transporte": c.via_transporte,
                     "total_m3": decimal_to_float(c.total_m3),
                     "subtotal": decimal_to_float(c.subtotal),
                     "total_monto": decimal_to_float(c.total_monto),
@@ -50,9 +56,14 @@ class QuotationHandler(ExecutorBase):
             ],
         }
 
-    def generar_cotizacion(self, tipo_compra: str | None = None) -> dict[str, Any]:
+    def generar_cotizacion(self, via_transporte: str | None = None) -> dict[str, Any]:
         if err := self._require_auth():
             return err
+
+        try:
+            via = normalizar_via_transporte(via_transporte)
+        except ValueError as exc:
+            return {"error": str(exc)}
 
         cart = self.db.exec(select(Cart).where(Cart.user_id == self.user_id)).first()
         if not cart:
@@ -75,12 +86,12 @@ class QuotationHandler(ExecutorBase):
             subtotal += Decimal(str(pieza.precio_unitario)) * qty
 
         porcentaje = get_config_decimal(self.db, "porcentaje_anticipo")
-        tasa_salvoconducto = get_config_decimal(self.db, "tasa_salvoconducto_por_m3")
         dias_vencimiento = get_config_int(self.db, "dias_vencimiento_cotizacion", 10)
-        costo_transporte = get_config_decimal(self.db, "costo_transporte_defecto")
-        costo_cargue = get_config_decimal(self.db, "costo_cargue_defecto")
-        costo_descargue = get_config_decimal(self.db, "costo_descargue_defecto")
-        costo_salvoconducto = total_m3 * tasa_salvoconducto
+        costos_defecto = get_costos_defecto_por_via(self.db, via)
+        costo_transporte = costos_defecto["costo_transporte"]
+        costo_cargue = costos_defecto["costo_cargue"]
+        costo_descargue = costos_defecto["costo_descargue"]
+        costo_salvoconducto = calcular_salvoconducto(self.db, total_m3, via)
         valor_anticipo = subtotal * (porcentaje / Decimal("100"))
         total_monto = (
             subtotal + costo_transporte + costo_cargue + costo_descargue + costo_salvoconducto
@@ -92,7 +103,7 @@ class QuotationHandler(ExecutorBase):
             user_id=self.user_id,
             numero_cotizacion=numero,
             estado="pendiente",
-            tipo_compra=tipo_compra,
+            via_transporte=via,
             total_m3=total_m3,
             subtotal=subtotal,
             costo_transporte=costo_transporte,
@@ -134,6 +145,7 @@ class QuotationHandler(ExecutorBase):
                 "id": cotizacion.id,
                 "numero_cotizacion": cotizacion.numero_cotizacion,
                 "estado": cotizacion.estado,
+                "via_transporte": cotizacion.via_transporte,
                 "total_monto": decimal_to_float(cotizacion.total_monto),
                 "valor_anticipo": decimal_to_float(cotizacion.valor_anticipo),
                 "fecha_vencimiento": cotizacion.fecha_vencimiento.isoformat()

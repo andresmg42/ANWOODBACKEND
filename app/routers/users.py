@@ -1,24 +1,28 @@
 from typing import Annotated
-from fastapi import Depends, HTTPException
-from fastapi import APIRouter
-from ..schemas import UserPublic, UserInDB, UserIn, UserPublic, ChangeRole, UserUpdate
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import select
+
 from ..auth import (
-    get_current_active_user,
-    get_password_hash,
-    assign_role_to_user,
-    require_permission,
-    RoleEnum,
     PermissionsEnum,
+    RoleEnum,
+    assign_role_to_user,
+    get_password_hash,
+    require_permission,
     require_role,
 )
 from ..database import SessionDep
-from ..models import User as Userdb, Role
-from sqlmodel import select
+from ..models import User as Userdb
+from ..schemas import ChangeRole, MessageResponse, UserIn, UserPublic, UserUpdate
 
-router = APIRouter()
+router = APIRouter(tags=["users"])
 
 
-@router.post("/users", response_model=UserPublic)
+@router.post(
+    "/users",
+    response_model=UserPublic,
+    summary="Registrar usuario",
+)
 async def create_user(user: UserIn, db: SessionDep):
     existing_user = db.exec(
         select(Userdb).where(Userdb.username == user.username)
@@ -26,49 +30,47 @@ async def create_user(user: UserIn, db: SessionDep):
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exisits")
     hashed_password = get_password_hash(user.password)
-    db_user = UserInDB(**user.model_dump(), hashed_password=hashed_password)
-    valid_db_user = Userdb.model_validate(db_user)
-    db.add(valid_db_user)
+    db_user = Userdb(
+        **user.model_dump(exclude={"password"}),
+        hashed_password=hashed_password,
+    )
+    db.add(db_user)
     db.commit()
-    db.refresh(valid_db_user)
-    return valid_db_user
+    db.refresh(db_user)
+    return db_user
 
 
 @router.get(
     "/users",
-    response_model=list[Userdb],
+    response_model=list[UserPublic],
+    summary="Listar usuarios",
     dependencies=[Depends(require_permission(PermissionsEnum.VIEW_USER))],
 )
 async def get_users(db: SessionDep):
-
-    users = db.exec(select(Userdb)).all()
-
-    return users
+    return db.exec(select(Userdb)).all()
 
 
 @router.get(
     "/users/{user_id}",
     response_model=UserPublic,
+    summary="Obtener usuario por ID",
     dependencies=[Depends(require_permission(PermissionsEnum.VIEW_USER))],
 )
 async def get_user(db: SessionDep, user_id: int):
-
     user = db.get(Userdb, user_id)
-
     if not user:
         raise HTTPException(404, "user not found")
-
     return user
 
 
 @router.patch(
     "/users/{user_id}/delete",
+    response_model=MessageResponse,
+    summary="Desactivar usuario (soft delete)",
     dependencies=[Depends(require_permission(PermissionsEnum.DELETE_USER))],
 )
 async def delete_user(user_id: int, db: SessionDep):
-
     user = db.get(Userdb, user_id)
-
     if not user:
         raise HTTPException(404, "user not found")
 
@@ -76,7 +78,6 @@ async def delete_user(user_id: int, db: SessionDep):
         return {"message": f"user whit id {user_id} already deleted"}
 
     user.disabled = True
-
     db.commit()
     db.refresh(user)
     return {"message": f"user with id {user_id} deleted successfully"}
@@ -84,13 +85,12 @@ async def delete_user(user_id: int, db: SessionDep):
 
 @router.patch(
     "/users/{user_id}",
-    dependencies=[Depends(require_permission(PermissionsEnum.UPDATE_USER))],
     response_model=UserPublic,
+    summary="Actualizar usuario",
+    dependencies=[Depends(require_permission(PermissionsEnum.UPDATE_USER))],
 )
 async def update_user(user_id: int, payload: UserUpdate, db: SessionDep):
-
     user = db.get(Userdb, user_id)
-
     if not user:
         raise HTTPException(404, "user not found")
 
@@ -109,6 +109,7 @@ async def update_user(user_id: int, payload: UserUpdate, db: SessionDep):
 @router.patch(
     "/users/{user_id}/role",
     response_model=UserPublic,
+    summary="Cambiar rol de usuario",
     dependencies=[Depends(require_role(RoleEnum.ADMIN))],
 )
 def change_user_role(
@@ -117,7 +118,6 @@ def change_user_role(
     session: SessionDep,
 ):
     user = session.get(Userdb, user_id)
-
     if not user:
         raise HTTPException(404, "User not found")
 
@@ -126,7 +126,6 @@ def change_user_role(
 
     try:
         role_enum = RoleEnum(new_role.name)
-
     except ValueError:
         raise HTTPException(400, "invalid role")
 

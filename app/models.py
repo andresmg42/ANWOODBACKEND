@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, Numeric
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -16,6 +16,11 @@ class EstadoCotizacionEnum(str, Enum):
     APROBADA = "aprobada"
     RECHAZADA = "rechazada"
     CANCELADA = "cancelada"
+
+
+class ViaTransporteEnum(str, Enum):
+    TIERRA = "tierra"
+    MAR = "mar"
 
 
 class ReglaCalculoEnum(str, Enum):
@@ -65,6 +70,30 @@ class User(SQLModel, table=True):
         back_populates="updated_by"
     )
     cotizaciones: list["Cotizacion"] = Relationship(back_populates="usuario")
+    proveedor: Optional["Proveedor"] = Relationship(back_populates="user")
+    pagos: list["Pago"] = Relationship(back_populates="user")
+
+
+class ProveedorLote(SQLModel, table=True):
+    __tablename__ = "proveedor_lote"
+    proveedor_id: int = Field(primary_key=True, foreign_key="proveedor.id")
+    lote_id: int = Field(primary_key=True, foreign_key="loteinventory.id")
+
+
+class Proveedor(SQLModel, table=True):
+    __tablename__ = "proveedor"
+    id: int | None = Field(primary_key=True, default=None)
+    nombre: str
+    telefono: str | None = Field(default=None)
+    activo: bool = Field(default=True)
+    user_id: int | None = Field(default=None, foreign_key="user.id", unique=True)
+    created_at: datetime | None = Field(default_factory=datetime.utcnow)
+
+    user: Optional["User"] = Relationship(back_populates="proveedor")
+    lotes: list["LoteInventory"] = Relationship(
+        back_populates="proveedores",
+        link_model=ProveedorLote,
+    )
 
 
 class Configuration(SQLModel, table=True):
@@ -93,12 +122,15 @@ class Cart(SQLModel, table=True):
 class LoteInventory(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     codigo_lote: str | None = Field(default=None, unique=True, index=True)
-    proveedor: str | None = Field(default=None)
     fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
     costo_total: Decimal | None = Field(default=None)
     estado: str | None = Field(default="activo")
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
     piezas: list["WoodPiece"] = Relationship(back_populates="lote")
+    proveedores: list["Proveedor"] = Relationship(
+        back_populates="lotes",
+        link_model=ProveedorLote,
+    )
 
 
 # class Client(SQLModel, table=True):
@@ -123,7 +155,7 @@ class Cotizacion(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     numero_cotizacion: str = Field(index=True, unique=True)
     estado: str = Field(default="pendiente")
-    tipo_compra: str | None = Field(default=None)
+    via_transporte: str = Field(default=ViaTransporteEnum.TIERRA.value)
     total_m3: Decimal = Field(default=Decimal("0"))
     subtotal: Decimal = Field(default=Decimal("0"))
     costo_transporte: Decimal = Field(default=Decimal("0"))
@@ -167,7 +199,6 @@ class Categoria(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     nombre: str = Field(index=True)
     estrategia_precio: str
-    permite_cubicacion: bool = Field(default=True)
     formula_cubicacion: str = Field(
         default=FormulaCubicacionEnum.LARGO_X_ALTO_X_ANCHO_DIV_10.value
     )
@@ -182,11 +213,9 @@ class TipoMadera(SQLModel, table=True):
     id: int | None = Field(primary_key=True, default=None)
     categoria_id: int = Field(foreign_key="categoria.id")
     nombre: str = Field(index=True)
-    densidad_kg_m3: Decimal
     precio_por_metro: Decimal
     descripcion: str | None = None
     activo: bool = Field(default=True)
-    permite_cubicacion: bool = Field(default=True)
     imagenes: list[str] = Field(
         default_factory=list,
         sa_column=Column(JSON, nullable=False, default=list),
@@ -203,7 +232,7 @@ class Medida(SQLModel, table=True):
     alto_in: Decimal
     etiqueta: str | None = None
     es_estandar: bool = Field(default=True)
-    permite_cubicacion: bool = Field(default=True)
+    cubica: bool = Field(default=True)
     precio_minimo_por_metro: Decimal | None = Field(default=None)
 
     piezas: list["WoodPiece"] = Relationship(back_populates="medida")
@@ -214,14 +243,16 @@ class WoodPiece(SQLModel, table=True):
     tipo_madera_id: int | None = Field(default=None, foreign_key="tipo_madera.id")
     medida_id: int | None = Field(default=None, foreign_key="medida.id")
     lote_id: int | None = Field(default=None, foreign_key="loteinventory.id")
+    ancho_in: Decimal | None = Field(default=None)
+    alto_in: Decimal | None = Field(default=None)
     largo_m: Decimal | None = Field(default=None)
     volumen_m3: Decimal | None = Field(default=None)
     cantidad: int = Field(default=0)
     cantidad_reservada: int = Field(default=0)
     estado: str | None = Field(default="disponible")
+    calidad: str | None = Field(default=None)
     costo_unitario: Decimal | None = Field(default=None)
     precio_unitario: Decimal | None = Field(default=None)
-    fecha_ingreso: datetime | None = Field(default_factory=datetime.utcnow)
     created_at: datetime | None = Field(default_factory=datetime.utcnow)
 
     tipo_madera: Optional["TipoMadera"] = Relationship(back_populates="piezas")
@@ -259,3 +290,16 @@ class MovimientoInventario(SQLModel, table=True):
 
     pieza: Optional["WoodPiece"] = Relationship(back_populates="movimientos")
     usuario: Optional["User"] = Relationship(back_populates="movimientos")
+
+
+class Pago(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    preference_id: str
+    mp_payment_id: str | None = Field(default=None)
+    status: str = Field(default="pending")
+    monto_total: Decimal = Field(sa_column=Column(Numeric(12, 2)))
+    items_json: list | dict = Field(default_factory=list, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime | None = Field(default=None)
+    user: Optional["User"] = Relationship(back_populates="pagos")

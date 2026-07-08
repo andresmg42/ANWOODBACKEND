@@ -7,7 +7,7 @@ from sqlmodel import select
 from ..auth import get_current_active_user, require_permission
 from ..database import SessionDep
 from ..models import Cart, ItemCart, WoodPiece, User  
-from ..schemas import ItemCartAdd, ItemCartUpdate, CartPublic
+from ..schemas import DetailResponse, ItemCartAdd, ItemCartUpdate, CartPublic
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -32,7 +32,7 @@ def _get_carrito_item(item_id: int, carrito_id: int, db) -> ItemCart:
     return item
 
 
-@router.get("", response_model=CartPublic)
+@router.get("", response_model=CartPublic, summary="Ver carrito del usuario")
 async def ver_carrito(
     current_user: Annotated[User, Depends(get_current_active_user)], 
     db: SessionDep,
@@ -41,7 +41,12 @@ async def ver_carrito(
     return carrito
 
 
-@router.post("/items", response_model=CartPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/items",
+    response_model=CartPublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="Agregar pieza al carrito",
+)
 async def agregar_item(
     data: ItemCartAdd,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -90,7 +95,7 @@ async def agregar_item(
     return carrito
 
 
-@router.patch("/items/{item_id}", response_model=CartPublic)
+@router.patch("/items/{item_id}", response_model=CartPublic, summary="Actualizar cantidad")
 async def actualizar_item(
     item_id: int,
     data: ItemCartUpdate,
@@ -132,7 +137,7 @@ async def actualizar_item(
     return carrito
 
 
-@router.delete("/items/{item_id}")
+@router.delete("/items/{item_id}", response_model=DetailResponse, summary="Quitar item")
 async def eliminar_item(
     item_id: int,
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -151,7 +156,7 @@ async def eliminar_item(
     return {"detail": "Item eliminado del carrito"}
 
 
-@router.delete("")
+@router.delete("", response_model=DetailResponse, summary="Vaciar carrito")
 async def vaciar_carrito(
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: SessionDep,

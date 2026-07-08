@@ -9,12 +9,20 @@ from ..schemas import TipoMaderaCreate, TipoMaderaPublic, TipoMaderaUpdate
 router = APIRouter(prefix="/wood-types", tags=["wood-types"])
 
 
-@router.get("/", response_model=list[TipoMaderaPublic])
+@router.get(
+    "/",
+    response_model=list[TipoMaderaPublic],
+    summary="Listar tipos de madera",
+)
 async def listar_tipos(db: SessionDep):
     return db.exec(select(TipoMadera)).all()
 
 
-@router.get("/{tipo_id}", response_model=TipoMaderaPublic)
+@router.get(
+    "/{tipo_id}",
+    response_model=TipoMaderaPublic,
+    summary="Obtener tipo de madera por ID",
+)
 async def obtener_tipo(tipo_id: int, db: SessionDep):
     tipo = db.get(TipoMadera, tipo_id)
     if not tipo:
@@ -25,6 +33,8 @@ async def obtener_tipo(tipo_id: int, db: SessionDep):
 @router.post(
     "/",
     response_model=TipoMaderaPublic,
+    status_code=201,
+    summary="Crear tipo de madera",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def crear_tipo(data: TipoMaderaCreate, db: SessionDep):
@@ -44,6 +54,7 @@ async def crear_tipo(data: TipoMaderaCreate, db: SessionDep):
 @router.patch(
     "/{tipo_id}",
     response_model=TipoMaderaPublic,
+    summary="Actualizar tipo de madera",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def actualizar_tipo(tipo_id: int, data: TipoMaderaUpdate, db: SessionDep):
@@ -67,6 +78,7 @@ async def actualizar_tipo(tipo_id: int, data: TipoMaderaUpdate, db: SessionDep):
 @router.delete(
     "/{tipo_id}",
     status_code=204,
+    summary="Eliminar tipo de madera",
     dependencies=[Depends(require_permission(PermissionsEnum.GESTIONAR_INVENTARIO))],
 )
 async def eliminar_tipo(tipo_id: int, db: SessionDep):
