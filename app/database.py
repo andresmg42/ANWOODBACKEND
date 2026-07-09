@@ -215,6 +215,16 @@ def _ensure_cotizacion_via_transporte_column():
         connection.execute(text(statement))
 
 
+def _fix_configuracion_null_updated_at():
+    inspector = inspect(engine)
+    if "configuracion" not in inspector.get_table_names():
+        return
+    with engine.begin() as connection:
+        connection.execute(
+            text("UPDATE configuracion SET updated_at = NOW() WHERE updated_at IS NULL")
+        )
+
+
 def _ensure_via_transporte_configurations():
     inspector = inspect(engine)
 
@@ -289,8 +299,8 @@ def _ensure_via_transporte_configurations():
 
             connection.execute(
                 text(
-                    "INSERT INTO configuracion (clave, valor, descripcion) "
-                    "VALUES (:clave, :valor, :descripcion)"
+                    "INSERT INTO configuracion (clave, valor, descripcion, updated_at) "
+                    "VALUES (:clave, :valor, :descripcion, NOW())"
                 ),
                 {"clave": new_key, "valor": str(valor), "descripcion": descripcion},
             )
@@ -307,6 +317,7 @@ def create_db_and_tables():
     _drop_cotizacion_tipo_compra_column()
     _drop_loteinventory_proveedor_column()
     _ensure_cotizacion_via_transporte_column()
+    _fix_configuracion_null_updated_at()
     _ensure_via_transporte_configurations()
 
 
