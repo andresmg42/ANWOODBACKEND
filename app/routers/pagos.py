@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any
+from uuid import uuid4
 
 import mercadopago
 import os
@@ -10,7 +11,7 @@ from sqlmodel import select
 
 from ..auth import RoleEnum, get_current_active_user
 from ..database import SessionDep
-from ..models import Cart, ItemCart, Pago, User, WoodPiece
+from ..models import Cart, Cotizacion, DetalleCotizacion, EstadoCotizacionEnum, ItemCart, Pago, User, WoodPiece
 from ..schemas import PagoCreate, PagoPublic, PagoPublicWithUser, PreferenciaResponse
 
 load_dotenv()
@@ -64,6 +65,73 @@ def _vaciar_carrito_usuario(user_id: int, db: SessionDep) -> None:
         db.delete(item)
 
     carrito.updated_at = datetime.utcnow()
+
+
+def _crear_cotizacion_desde_pago(pago: Pago, db: SessionDep) -> None:
+    """Reduce stock y genera una Cotizacion aprobada a partir de un Pago confirmado."""
+    items: list[dict] = pago.items_json if isinstance(pago.items_json, list) else []
+    if not items:
+        return
+
+    total_m3 = Decimal("0")
+    subtotal = Decimal("0")
+    detalles_data: list[dict] = []
+
+    for item in items:
+        pieza_id = item.get("pieza_id")
+        cantidad = int(item.get("cantidad") or 0)
+        precio_unitario = Decimal(str(item.get("precio_unitario") or 0))
+        titulo = item.get("titulo") or f"Pieza {pieza_id}"
+
+        pieza = db.get(WoodPiece, pieza_id) if pieza_id else None
+        volumen_unitario = (
+            Decimal(str(pieza.volumen_m3)) if pieza and pieza.volumen_m3 else Decimal("0")
+        )
+
+        if pieza and cantidad > 0:
+            pieza.cantidad = max(0, pieza.cantidad - cantidad)
+            db.add(pieza)
+
+        item_subtotal = precio_unitario * Decimal(str(cantidad))
+        total_m3 += volumen_unitario * Decimal(str(cantidad))
+        subtotal += item_subtotal
+
+        if pieza_id is not None:
+            detalles_data.append(
+                {
+                    "pieza_id": pieza_id,
+                    "descripcion_item": titulo,
+                    "cantidad": cantidad,
+                    "volumen_unitario_m3": volumen_unitario,
+                    "precio_unitario_snapshot": precio_unitario,
+                    "subtotal": item_subtotal,
+                }
+            )
+
+    ahora = datetime.utcnow()
+    numero = f"VENTA-{ahora.year}-{str(uuid4())[:8].upper()}"
+
+    cotizacion = Cotizacion(
+        user_id=pago.user_id,
+        numero_cotizacion=numero,
+        estado=EstadoCotizacionEnum.APROBADA.value,
+        via_transporte="tierra",
+        total_m3=total_m3,
+        subtotal=subtotal,
+        costo_transporte=Decimal("0"),
+        costo_cargue=Decimal("0"),
+        costo_descargue=Decimal("0"),
+        costo_salvoconducto=Decimal("0"),
+        porcentaje_anticipo=Decimal("0"),
+        valor_anticipo=Decimal("0"),
+        total_monto=pago.monto_total,
+        fecha_emision=ahora,
+    )
+    db.add(cotizacion)
+    db.flush()
+
+    for d in detalles_data:
+        db.add(DetalleCotizacion(cotizacion_id=cotizacion.id, **d))
 
 
 def _extract_payment_id(payload: dict[str, Any]) -> str | None:
@@ -258,6 +326,7 @@ async def webhook_pago(request: Request, db: SessionDep):
     db.commit()
 
     if new_status == "approved":
+        _crear_cotizacion_desde_pago(pago, db)
         _vaciar_carrito_usuario(pago.user_id, db)
         db.commit()
 
