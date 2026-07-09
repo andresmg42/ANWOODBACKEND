@@ -310,6 +310,10 @@ async def obtener_pago(
 ):
     pago = db.get(Pago, payment_id)
     if not pago:
+        pago = db.exec(
+            select(Pago).where(Pago.mp_payment_id == str(payment_id))
+        ).first()
+    if not pago:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pago no encontrado",
