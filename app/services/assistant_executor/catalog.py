@@ -52,3 +52,7 @@ class CatalogHandler(ExecutorBase):
                 for m in medidas
             ],
         }
+    
+    def get_available_wood_types(self):
+        result=self.db.exec(select(TipoMadera.nombre)).all()
+        return list(result)

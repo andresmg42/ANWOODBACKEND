@@ -1,7 +1,8 @@
-from typing import Annotated, Literal
-
+from typing import Annotated, Literal, Optional
+import uuid
+from pydantic import ValidationError
 import jwt
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException,UploadFile,File, Form
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, Field
 
@@ -12,7 +13,7 @@ from ..database import SessionDep
 from ..models import User
 from ..services.assistant_executor import AssistantExecutor
 from ..services.gemini_service import GEMINI_API_KEY, get_gemini_service
-
+import json
 router = APIRouter(prefix="/assistant", tags=["assistant"])
 
 
@@ -21,15 +22,17 @@ class ChatMessage(BaseModel):
     content: str
 
 
-class AssistantChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=2000)
-    history: list[ChatMessage] = Field(default_factory=list)
+# class AssistantChatRequest(BaseModel):
+#     message: str = Field(..., min_length=1, max_length=2000)
+#     image: UploadFile | None =None
+#     history: list[ChatMessage] = Field(default_factory=list)
 
 
 class AssistantChatResponse(BaseModel):
     reply: str
     intent: str | None = None
     capability: str | None = None
+    session_id: str
 
 
 def _get_user_from_token(authorization: str | None, db: SessionDep) -> User | None:
@@ -62,10 +65,24 @@ def _session_context(user: User | None) -> str:
 
 @router.post("/chat", response_model=AssistantChatResponse)
 async def assistant_chat(
-    body: AssistantChatRequest,
     db: SessionDep,
+    message: str = Form(..., min_length=1, max_length=2000),
+    history: str = Form(default="[]"),
+    session_id: str | None = Form(default=None),
+    image: Optional[UploadFile] = File(default=None),
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ):
+    try:
+
+        raw_history=json.loads(history)
+        validated_history=[ChatMessage(**m) for m in raw_history]
+
+    except (json.JSONDecodeError,ValidationError,TypeError) as exc:
+        raise HTTPException(status_code=422, detail=f'Invalid History: {exc}')
+    
+
+
+    
     if not GEMINI_API_KEY:
         raise HTTPException(
             status_code=503,
@@ -79,14 +96,18 @@ async def assistant_chat(
 
     user = _get_user_from_token(authorization, db)
     executor = AssistantExecutor(db, user_id=user.id if user else None)
-    history = [{"role": m.role, "content": m.content} for m in body.history]
+    chat_history = [{"role": m.role, "content": m.content} for m in validated_history]
+    active_session_id = session_id or str(uuid.uuid4())
 
     try:
-        result = service.chat(
-            body.message,
-            history,
+        result = await  service.chat(
+            message,
+            chat_history,
             executor,
+            image,
             session_context=_session_context(user),
+            session_id=active_session_id,
+            
         )
     except Exception as exc:
         raise HTTPException(
@@ -98,4 +119,12 @@ async def assistant_chat(
         reply=result["reply"],
         intent=result["intent"],
         capability=result.get("capability"),
+        session_id=result["session_id"],
     )
+
+
+@router.delete("/session/{session_id}")
+async def delete_assistant_session(session_id: str):
+    service = get_gemini_service()
+    service.clear_session(session_id)
+    return {"message": f"Assistant session {session_id} cleared", "session_id": session_id}
