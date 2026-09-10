@@ -35,7 +35,6 @@ async def lifespan(_app: FastAPI):
         print(f"Error al crear el admin: {e}")
 
     yield
-    
 
 
 app = FastAPI(
@@ -51,8 +50,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://anwoodfrontend.vercel.app",
+        "https://anwoodfrontend-seven.vercel.app",
         "https://angwood.vercel.app",
         "http://localhost:3000",
+        "http://localhost:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],
