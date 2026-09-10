@@ -50,7 +50,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://anwoodfrontend.vercel.app",
-        "https://anwoodfrontend-seven.vercel.app/",
+        "https://anwoodfrontend-seven.vercel.app",
         "https://angwood.vercel.app",
         "http://localhost:3000",
         "http://localhost:3001",
