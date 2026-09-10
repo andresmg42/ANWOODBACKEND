@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 from sqlmodel import Field, SQLModel
 
-from .types import ApiDecimal
+from .decimal_types import ApiDecimal
 
 
 class Token(BaseModel):
